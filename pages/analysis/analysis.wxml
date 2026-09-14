@@ -1,0 +1,246 @@
+<!-- pages/analysis/analysis.wxml -->
+<view class="page">
+
+  <!-- Tab 切换 -->
+  <view class="tab-pill">
+    <view wx:for="{{ tabs }}" wx:key="id"
+          class="tab-pill-item {{ activeTab === item.id ? 'tab-pill-active' : '' }}"
+          data-tab="{{ item.id }}"
+          bindtap="onTabChange">
+      <text class="tab-pill-emoji">{{ item.icon }}</text>
+      <text>{{ item.name }}</text>
+    </view>
+  </view>
+
+  <!-- 总战绩概览 -->
+  <view class="overview-card section-card">
+    <view class="overview-row">
+      <view class="overview-item">
+        <view class="overview-num">{{ totalGames }}</view>
+        <view class="overview-label">累计场次</view>
+      </view>
+      <view class="overview-divider"></view>
+      <view class="overview-item">
+        <view class="overview-num">{{ players.length }}</view>
+        <view class="overview-label">牌友数</view>
+      </view>
+      <view class="overview-divider"></view>
+      <view class="overview-item">
+        <view class="overview-num">{{ relevantGames }}</view>
+        <view class="overview-label">相关场次</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 福星克星 Tab ============ -->
+  <view wx:if="{{ activeTab === 'fortune' }}" class="fortune-tab">
+
+    <!-- 玩家选择 -->
+    <view wx:if="{{ players.length > 0 }}" class="player-picker section-card" bindtap="onPickerTap">
+      <view class="player-picker-left">
+        <view class="avatar avatar-md avatar-grad-1">?</view>
+        <view>
+          <view class="picker-label">查看玩家</view>
+          <view class="picker-sub">{{ players[selectedPlayerIndex].nickname }}</view>
+        </view>
+      </view>
+      <text class="picker-arrow">⌄</text>
+    </view>
+
+    <!-- 数据不足 -->
+    <view wx:if="{{ !enoughData && players.length > 0 }}" class="empty-state">
+      <view class="empty-illustration"><text class="empty-emoji">🎲</text></view>
+      <text class="empty-title">战绩数据不足</text>
+      <text class="empty-subtitle">福星克星分析至少需要 3 场战绩</text>
+      <text class="empty-tip">当前 {{ totalGames }} 场，再来 {{ 3 - totalGames }} 场即可解锁</text>
+    </view>
+
+    <!-- 旺友区 -->
+    <view wx:elif="{{ analysis }}" class="section-card">
+      <view class="section-header">
+        <view class="section-icon-wrap section-icon-lucky">⭐</view>
+        <view class="section-title-wrap">
+          <text class="section-title">你的旺友</text>
+          <text class="section-sub">同坐战绩明显占优</text>
+        </view>
+      </view>
+
+      <view wx:if="{{ analysis.luckyPartners.length === 0 }}" class="empty-mini">
+        暂无可识别旺友，继续打几场吧
+      </view>
+
+      <view wx:else class="fortune-list">
+        <view wx:for="{{ analysis.luckyPartners }}" wx:key="partnerId"
+              class="fortune-row fortune-lucky">
+          <view class="fortune-rank rank-{{ index + 1 }}">
+            <text wx:if="{{ index === 0 }}">🥇</text>
+            <text wx:elif="{{ index === 1 }}">🥈</text>
+            <text wx:elif="{{ index === 2 }}">🥉</text>
+            <text wx:else>{{ index + 1 }}</text>
+          </view>
+          <view class="fortune-info">
+            <view class="fortune-nick">{{ item.partnerNickname }}</view>
+            <view class="fortune-meta">
+              <text class="meta-tag">同桌 {{ item.gamesTogether }} 次</text>
+              <text class="meta-tag meta-tag-success">胜率 {{ formatWinRate(item.winRate) }}</text>
+            </view>
+          </view>
+          <view class="fortune-score-wrap">
+            <view class="fortune-score t-success">{{ formatNetScore(item.netScore) }}</view>
+            <view class="fortune-score-label">净胜分</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 克星区 -->
+    <view wx:if="{{ analysis && analysis.luckyPartners.length > 0 }}" class="section-gap"></view>
+
+    <view wx:if="{{ analysis }}" class="section-card">
+      <view class="section-header">
+        <view class="section-icon-wrap section-icon-evil">⚡</view>
+        <view class="section-title-wrap">
+          <text class="section-title">你的克星</text>
+          <text class="section-sub">同坐容易翻车</text>
+        </view>
+      </view>
+
+      <view wx:if="{{ analysis.evilPartners.length === 0 }}" class="empty-mini">
+        暂无克星 · 你真的很强 🎉
+      </view>
+
+      <view wx:else class="fortune-list">
+        <view wx:for="{{ analysis.evilPartners }}" wx:key="partnerId"
+              class="fortune-row fortune-evil">
+          <view class="fortune-rank rank-{{ index + 1 }}">
+            <text wx:if="{{ index === 0 }}">🥇</text>
+            <text wx:elif="{{ index === 1 }}">🥈</text>
+            <text wx:elif="{{ index === 2 }}">🥉</text>
+            <text wx:else>{{ index + 1 }}</text>
+          </view>
+          <view class="fortune-info">
+            <view class="fortune-nick">{{ item.partnerNickname }}</view>
+            <view class="fortune-meta">
+              <text class="meta-tag">同桌 {{ item.gamesTogether }} 次</text>
+              <text class="meta-tag meta-tag-danger">胜率 {{ formatWinRate(item.winRate) }}</text>
+            </view>
+          </view>
+          <view class="fortune-score-wrap">
+            <view class="fortune-score t-danger">{{ formatNetScore(item.netScore) }}</view>
+            <view class="fortune-score-label">净胜分</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 没玩家 -->
+    <view wx:if="{{ players.length === 0 }}" class="empty-state">
+      <view class="empty-illustration"><text class="empty-emoji">👥</text></view>
+      <text class="empty-title">还没有玩家</text>
+      <text class="empty-subtitle">先去首页添加玩家并记录战绩吧</text>
+    </view>
+  </view>
+
+  <!-- ============ 牌运月历 Tab ============ -->
+  <view wx:else class="calendar-tab">
+
+    <!-- 月份导航 -->
+    <view class="month-nav section-card">
+      <view class="month-arrow" bindtap="onPrevMonth">
+        <text>‹</text>
+      </view>
+      <view class="month-text">{{ monthText }}</view>
+      <view class="month-arrow" bindtap="onNextMonth">
+        <text>›</text>
+      </view>
+    </view>
+
+    <!-- 月度统计 -->
+    <view wx:if="{{ calendarStats }}" class="month-stats">
+      <view class="month-stat stat-win">
+        <view class="month-stat-num">{{ calendarStats.winDays }}</view>
+        <view class="month-stat-label">赢日</view>
+      </view>
+      <view class="month-stat stat-even">
+        <view class="month-stat-num">{{ calendarStats.evenDays }}</view>
+        <view class="month-stat-label">平日</view>
+      </view>
+      <view class="month-stat stat-lose">
+        <view class="month-stat-num">{{ calendarStats.loseDays }}</view>
+        <view class="month-stat-label">输日</view>
+      </view>
+      <view class="month-stat stat-total">
+        <view class="month-stat-num">{{ calendarStats.totalGames }}</view>
+        <view class="month-stat-label">总场次</view>
+      </view>
+    </view>
+
+    <!-- 日历 -->
+    <view class="calendar section-card">
+      <view class="weekday-row">
+        <view wx:for="{{ weekdays }}" wx:key="*this" class="weekday-cell">{{ item }}</view>
+      </view>
+      <view class="day-grid">
+        <view wx:for="{{ calendarCells }}" wx:key="date"
+              class="day-cell {{ !item.day ? 'day-empty' : '' }} {{ item.data && item.data.result === 'win' ? 'day-win' : '' }} {{ item.data && item.data.result === 'lose' ? 'day-lose' : '' }} {{ item.data && item.data.result === 'even' ? 'day-even' : '' }} {{ item.day && !item.data ? 'day-none' : '' }}"
+              data-date="{{ item.date }}"
+              bindtap="onDaySelect">
+          <view wx:if="{{ item.day }}" class="day-num">{{ item.day }}</view>
+          <view wx:if="{{ item.data }}" class="day-score">
+            {{ item.data.netScore > 0 ? '+' : '' }}{{ item.data.netScore }}
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 图例 -->
+    <view class="legend">
+      <view class="legend-item"><view class="legend-dot dot-win"></view>赢日</view>
+      <view class="legend-item"><view class="legend-dot dot-even"></view>平日</view>
+      <view class="legend-item"><view class="legend-dot dot-lose"></view>输日</view>
+      <view class="legend-item"><view class="legend-dot dot-none"></view>未打</view>
+    </view>
+
+    <!-- 选中日详情 -->
+    <view wx:if="{{ selectedDay }}" class="section-card day-detail">
+      <view class="detail-header">
+        <view>
+          <view class="detail-title">{{ selectedDay.date }}</view>
+          <view class="detail-sub">点击查看当日战绩</view>
+        </view>
+        <view class="detail-close" bindtap="onCloseDayDetail">
+          <text>×</text>
+        </view>
+      </view>
+
+      <view wx:if="{{ selectedDayRecords.length === 0 }}" class="empty-mini">
+        当日无战绩
+      </view>
+
+      <view wx:for="{{ selectedDayRecords }}" wx:key="id" class="detail-record">
+        <view class="detail-record-head">
+          <view class="record-rule-tag">{{ item.ruleName }}</view>
+          <view class="record-time">{{ formatRecordTime(item.playedAt) }}</view>
+        </view>
+        <view wx:for="{{ item.players }}" wx:for-item="player" wx:key="playerId"
+              class="detail-player-row">
+          <view class="avatar avatar-sm avatar-grad-{{ (index % 8) + 1 }}">
+            {{ player.nickname[0] }}
+          </view>
+          <text class="detail-player-name">{{ player.nickname }}</text>
+          <text class="detail-player-score {{ player.score > 0 ? 't-success' : (player.score < 0 ? 't-danger' : '') }}">
+            {{ player.score > 0 ? '+' : '' }}{{ player.score }}
+          </text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 无战绩 -->
+    <view wx:if="{{ totalGames === 0 }}" class="empty-state">
+      <view class="empty-illustration"><text class="empty-emoji">📅</text></view>
+      <text class="empty-title">还没有战绩</text>
+      <text class="empty-subtitle">去首页记录你的第一场牌局吧</text>
+    </view>
+  </view>
+
+</view>

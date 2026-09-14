@@ -1,0 +1,121 @@
+<!-- pages/profile/profile.wxml -->
+<view class="page">
+
+  <!-- 用户 Hero -->
+  <view class="user-hero">
+    <view class="user-hero-bg"></view>
+    <view class="user-hero-content">
+      <view class="user-avatar">
+        <text class="avatar-emoji">🀄</text>
+      </view>
+      <view class="user-info">
+        <view class="user-name">雀战录用户</view>
+        <view class="user-meta">{{ totalGames }} 场战绩 · {{ totalPlayers }} 位牌友</view>
+      </view>
+      <view class="user-badge">
+        <text>LV.</text>
+        <text class="user-level">{{ userLevel }}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 核心统计 -->
+  <view class="stats-grid">
+    <view class="stat-card">
+      <view class="stat-num t-primary">{{ totalGames }}</view>
+      <view class="stat-label">累计场次</view>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-card">
+      <view class="stat-num t-success">{{ totalPlayers }}</view>
+      <view class="stat-label">牌友数</view>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-card">
+      <view class="stat-num t-warning">{{ winRate }}%</view>
+      <view class="stat-label">总胜率</view>
+    </view>
+  </view>
+
+  <!-- 同步状态 -->
+  <view class="sync-bar">
+    <view class="sync-dot sync-{{ syncStatus }}"></view>
+    <view class="sync-text-wrap">
+      <block wx:if="{{ syncStatus === 'syncing' }}">
+        <text class="sync-text-main">正在同步...</text>
+        <text class="sync-text-sub">推送本地战绩到云端</text>
+      </block>
+      <block wx:elif="{{ syncStatus === 'error' }}">
+        <text class="sync-text-main">后端不可达</text>
+        <text class="sync-text-sub">数据已保存到本地</text>
+      </block>
+      <block wx:else>
+        <text class="sync-text-main">云端已同步</text>
+        <text class="sync-text-sub">{{ pendingCount }} 条待上传 · {{ totalGames }} 条战绩</text>
+      </block>
+    </view>
+  </view>
+
+  <!-- 等级卡片（免费 / Pro 分层） -->
+  <view class="tier-card {{ isPro ? 'tier-card-pro' : 'tier-card-free' }}">
+    <view class="tier-head">
+      <view class="tier-badge">{{ isPro ? 'PRO' : 'FREE' }}</view>
+      <view class="tier-title-wrap">
+        <text class="tier-title">{{ isPro ? 'Pro 版' : '免费版' }}</text>
+        <text class="tier-sub">{{ isPro ? '云端永久保存全部战绩' : '云端只保留最近 ' + cloudWindowDates + ' 个有数据的日期' }}</text>
+      </view>
+      <view class="tier-action" bindtap="onUpgrade">
+        <text>{{ isPro ? '权益' : '升级' }}</text>
+      </view>
+    </view>
+    <view class="tier-body">
+      <view class="tier-line">
+        <text class="tier-dot"></text>
+        <text class="tier-line-text">本地战绩永远全量保留，不受等级影响</text>
+      </view>
+      <view class="tier-line">
+        <text class="tier-dot"></text>
+        <text class="tier-line-text">{{ isPro ? '云端全量累积，换机完整恢复历史' : '免费版换机只能恢复最近 ' + cloudWindowDates + ' 天，升级后完整恢复' }}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 菜单区 -->
+  <view wx:for="{{ menuSections }}" wx:key="title" class="menu-section section-card">
+    <view class="menu-title">
+      <text>{{ item.title }}</text>
+      <view wx:if="{{ item.title === '数据管理' }}" class="menu-title-line"></view>
+    </view>
+    <view wx:for="{{ item.items }}" wx:for-item="menu" wx:key="id"
+          class="menu-row"
+          bindtap="onMenuTap"
+          data-id="{{ menu.id }}">
+      <view class="menu-icon-wrap menu-icon-{{ menu.iconType }}">
+        <text class="menu-icon">{{ menu.icon }}</text>
+      </view>
+      <view class="menu-content">
+        <view class="menu-name">{{ menu.title }}</view>
+        <view class="menu-desc">{{ menu.desc }}</view>
+      </view>
+      <view wx:if="{{ menu.action === 'switch' }}" class="menu-switch">
+        <switch checked="{{ menu.value }}"
+                color="#534AB7"
+                data-id="{{ menu.id }}"
+                bindchange="onSwitchChange" />
+      </view>
+      <view wx:else class="menu-arrow">
+        <text>›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部 -->
+  <view class="footer">
+    <view class="footer-logo">
+      <text>🀄</text>
+    </view>
+    <view class="footer-text">雀战录 v{{ version }}</view>
+    <view class="footer-text-sub">{{ buildTime }}</view>
+  </view>
+
+</view>

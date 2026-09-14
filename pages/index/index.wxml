@@ -1,0 +1,212 @@
+<!-- pages/index/index.wxml -->
+<view class="page">
+
+  <!-- 顶部 Hero 区 -->
+  <view class="hero">
+    <view class="hero-bg"></view>
+    <view class="hero-content">
+      <view class="hero-greeting">
+        <view class="hero-title">{{ greeting }}<text class="hero-emoji">🀄</text></view>
+        <view class="hero-subtitle">{{ todayText }}</view>
+      </view>
+      <view class="hero-stats">
+        <view class="hero-stat">
+          <view class="hero-stat-num">{{ totalGames }}</view>
+          <view class="hero-stat-label">累计场次</view>
+        </view>
+        <view class="hero-stat-divider"></view>
+        <view class="hero-stat">
+          <view class="hero-stat-num">{{ totalPlayers }}</view>
+          <view class="hero-stat-label">牌友</view>
+        </view>
+        <view class="hero-stat-divider"></view>
+        <view class="hero-stat">
+          <view class="hero-stat-num">{{ winRate }}<text class="hero-stat-pct">%</text></view>
+          <view class="hero-stat-label">总胜率</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 玩法 + 时段 -->
+  <view class="card section-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <view class="section-bar"></view>
+        <text class="section-title">玩法设置</text>
+      </view>
+    </view>
+
+    <picker mode="selector" range="{{ rules }}" range-key="name"
+            value="{{ selectedRuleIndex }}" bindchange="onRuleChange">
+      <view class="picker-row">
+        <text class="picker-label">玩法</text>
+        <view class="picker-value">
+          <text class="picker-value-text">{{ selectedRule.name }}</text>
+          <text class="picker-arrow">›</text>
+        </view>
+      </view>
+    </picker>
+
+    <view class="form-divider"></view>
+
+    <view class="form-row">
+      <text class="picker-label">时段</text>
+      <view class="duration-list">
+        <view wx:for="{{ durations }}" wx:key="id"
+              class="duration-chip {{ selectedDurationIndex === index ? 'duration-chip-active' : '' }}"
+              data-index="{{ index }}" bindtap="onDurationSelect">
+          <text class="duration-icon">{{ item.icon }}</text>
+          <text>{{ item.name }}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 玩家选择 -->
+  <view class="card section-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <view class="section-bar"></view>
+        <text class="section-title">牌友</text>
+      </view>
+      <text class="section-meta">{{ players.length }} / 4 人</text>
+    </view>
+
+    <view wx:if="{{ players.length > 0 }}" class="player-chips">
+      <view wx:for="{{ players }}" wx:key="playerId"
+            class="player-chip">
+        <view class="player-chip-avatar avatar-grad-{{ item.avatarIdx || 1 }}">
+          {{ item.nickname[0] }}
+        </view>
+        <text class="player-chip-name">{{ item.nickname }}</text>
+        <view class="chip-remove" data-index="{{ index }}" bindtap="onRemovePlayer">
+          <text>×</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="player-empty">
+      <text class="player-empty-icon">👥</text>
+      <text class="player-empty-text">先添加几位牌友开始记分吧</text>
+    </view>
+
+    <view class="add-player-row">
+      <input class="add-player-input"
+             placeholder="输入牌友昵称"
+             placeholder-class="input-placeholder"
+             value="{{ newPlayerName }}"
+             bindinput="onPlayerInput"
+             bindconfirm="onAddPlayer"
+             maxlength="10" />
+      <view class="add-btn {{ newPlayerName ? 'add-btn-active' : '' }}" bindtap="onAddPlayer">
+        <text class="add-btn-icon">+</text>
+        <text>添加</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 分数录入 -->
+  <view wx:if="{{ players.length > 0 }}" class="card section-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <view class="section-bar"></view>
+        <text class="section-title">本局分数</text>
+      </view>
+      <view class="score-badge {{ scoreValid ? 'score-badge-pos' : 'score-badge-neg' }}">
+        总和 {{ totalScore }} {{ scoreValid ? '✓' : '≠ 0' }}
+      </view>
+    </view>
+
+    <view wx:for="{{ players }}" wx:key="playerId" class="score-row">
+      <view class="score-player">
+        <view class="avatar avatar-sm avatar-grad-{{ item.avatarIdx || 1 }}">
+          {{ item.nickname[0] }}
+        </view>
+        <text class="score-player-name">{{ item.nickname }}</text>
+      </view>
+      <view class="score-input-wrap">
+        <view class="sign-toggle {{ item.negative ? 'sign-toggle-neg' : '' }}"
+              data-index="{{ index }}"
+              bindtap="onToggleSign">
+          <text>{{ item.negative ? '−' : '+' }}</text>
+        </view>
+        <input class="score-input"
+               type="number"
+               placeholder="0"
+               placeholder-class="input-placeholder"
+               value="{{ item.scoreText }}"
+               data-index="{{ index }}"
+               bindinput="onScoreInput" />
+      </view>
+    </view>
+
+    <view wx:if="{{ !scoreValid }}" class="score-hint">
+      <text class="score-hint-icon">💡</text>
+      <text class="score-hint-text">所有人分数相加应等于 0。点左侧「+ / −」切换赢分 / 输分</text>
+    </view>
+  </view>
+
+  <!-- 心情 -->
+  <view wx:if="{{ players.length > 0 }}" class="card section-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <view class="section-bar"></view>
+        <text class="section-title">今天的心情</text>
+      </view>
+      <text class="section-meta">可选</text>
+    </view>
+
+    <view class="mood-list">
+      <view wx:for="{{ moods }}" wx:key="id"
+            class="mood-item {{ selectedMood === item.id ? 'mood-item-active' : '' }}"
+            data-mood="{{ item.id }}"
+            bindtap="onMoodSelect">
+        <view class="mood-emoji">{{ item.icon }}</view>
+        <text class="mood-name">{{ item.name }}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 备注 -->
+  <view wx:if="{{ players.length > 0 }}" class="card section-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <view class="section-bar"></view>
+        <text class="section-title">备注</text>
+      </view>
+      <text class="section-meta">{{ note.length }} / 100</text>
+    </view>
+    <textarea class="note-input"
+              placeholder="如：胡了把大牌、点炮三次、最后一把翻盘..."
+              placeholder-class="input-placeholder"
+              value="{{ note }}"
+              bindinput="onNoteInput"
+              maxlength="100"
+              auto-height></textarea>
+  </view>
+
+  <!-- 底部空状态：未添加玩家 -->
+  <view wx:if="{{ players.length === 0 }}" class="empty-state">
+    <view class="empty-illustration">
+      <text class="empty-emoji">🀄</text>
+    </view>
+    <text class="empty-title">开始你的第一局</text>
+    <text class="empty-subtitle">添加 2-4 位牌友，记录第一场战绩</text>
+  </view>
+
+</view>
+
+<!-- 底部操作栏 -->
+<view wx:if="{{ players.length > 0 }}" class="action-bar">
+  <view class="action-bar-inner">
+    <view class="btn-secondary" bindtap="onFinish">
+      <text>查看战绩</text>
+    </view>
+    <view class="btn-primary-action {{ saveEnabled ? '' : 'btn-disabled' }}"
+          bindtap="onSave">
+      <text class="btn-primary-icon">✓</text>
+      <text>保存本局</text>
+    </view>
+  </view>
+</view>

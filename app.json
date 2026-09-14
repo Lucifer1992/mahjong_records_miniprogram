@@ -1,0 +1,54 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/records/records",
+    "pages/analysis/analysis",
+    "pages/profile/profile",
+    "pages/share/poster",
+    "pages/agreement/privacy",
+    "pages/agreement/terms"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#4A9D7E",
+    "navigationBarTitleText": "雀战录",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#F7F5F0"
+  },
+  "tabBar": {
+    "color": "#9B9A93",
+    "selectedColor": "#4A9D7E",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "记分",
+        "iconPath": "images/tab/tab-home.png",
+        "selectedIconPath": "images/tab/tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/records/records",
+        "text": "战绩",
+        "iconPath": "images/tab/tab-records.png",
+        "selectedIconPath": "images/tab/tab-records-active.png"
+      },
+      {
+        "pagePath": "pages/analysis/analysis",
+        "text": "分析",
+        "iconPath": "images/tab/tab-analysis.png",
+        "selectedIconPath": "images/tab/tab-analysis-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "images/tab/tab-profile.png",
+        "selectedIconPath": "images/tab/tab-profile-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "requiredPrivateInfos": []
+}

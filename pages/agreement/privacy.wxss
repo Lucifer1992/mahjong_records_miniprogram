@@ -1,0 +1,131 @@
+/* pages/agreement/privacy.wxss */
+
+.page {
+  min-height: 100vh;
+  background: var(--color-bg);
+  padding: 24rpx 24rpx 80rpx;
+}
+
+.agreement-card {
+  background: var(--color-bg-card);
+  border-radius: 24rpx;
+  padding: 40rpx 32rpx;
+  box-shadow: var(--shadow-md);
+}
+
+.agreement-head {
+  text-align: center;
+  padding-bottom: 32rpx;
+  border-bottom: 1rpx solid var(--color-border);
+  margin-bottom: 32rpx;
+}
+
+.agreement-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80rpx;
+  height: 80rpx;
+  background: linear-gradient(135deg, var(--color-primary-tint) 0%, var(--color-primary-light) 100%);
+  border-radius: 24rpx;
+  font-size: 40rpx;
+  margin-bottom: 16rpx;
+}
+
+.agreement-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -1rpx;
+  margin-bottom: 8rpx;
+}
+
+.agreement-meta {
+  font-size: 22rpx;
+  color: var(--color-text-tertiary);
+}
+
+.agreement-section {
+  margin-bottom: 36rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--color-primary);
+  letter-spacing: -0.3rpx;
+  margin-bottom: 16rpx;
+}
+
+.section-content {
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: var(--color-text);
+}
+
+.sub-item {
+  margin-top: 16rpx;
+  padding: 20rpx 24rpx;
+  background: var(--color-bg-surface);
+  border-radius: 16rpx;
+  border-left: 4rpx solid var(--color-primary);
+}
+
+.sub-title {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 8rpx;
+}
+
+.sub-content {
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+}
+
+.rights-list {
+  margin-top: 12rpx;
+}
+
+.right-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 12rpx 0;
+  font-size: 26rpx;
+  color: var(--color-text);
+}
+
+.right-item text {
+  flex: 1;
+}
+
+.contact-info {
+  margin-top: 12rpx;
+  padding: 20rpx 24rpx;
+  background: var(--color-primary-tint);
+  border-radius: 16rpx;
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: var(--color-text);
+}
+
+.agreement-footer {
+  margin-top: 48rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid var(--color-border);
+  text-align: center;
+}
+
+.footer-version {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 8rpx;
+}
+
+.footer-meta {
+  font-size: 20rpx;
+  color: var(--color-text-tertiary);
+}
