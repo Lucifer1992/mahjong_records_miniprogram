@@ -474,3 +474,7 @@
   font-size: 28rpx;
   line-height: 1;
 }
+/* ===== 广告（仅免费用户） ===== */
+.ad-banner {
+  margin: 24rpx 24rpx 40rpx;
+}

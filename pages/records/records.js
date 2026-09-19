@@ -1,8 +1,12 @@
 // pages/records/records.ts
 // 战绩列表页
+import { promptLoginIfNeeded } from '../../utils/auth';
 import { getRecords, getPlayers, deleteRecord } from '../../utils/storage';
 import { RULE_LABELS, DURATION_LABELS, MOOD_EMOJI } from '../../utils/types';
-import { calcOverallStats, calcRuleStats } from '../../utils/stats';
+import { ruleColor } from '../../utils/constants';
+import { adEnabled, adUnitId } from '../../utils/ads';
+import { isPro } from '../../utils/tier';
+import { calcOverallStats, calcRuleStats, filterRecordsByRule } from '../../utils/stats';
 import { formatDateShort, formatDateTime, relativeTime } from '../../utils/date';
 Page({
     data: {
@@ -32,6 +36,11 @@ Page({
         this.loadData();
     },
     onShow() {
+        promptLoginIfNeeded(this);
+        this.loadData();
+    },
+    /** 登录抽屉登录成功回调：刷新战绩列表 */
+    onLoggedIn() {
         this.loadData();
     },
     onPullDownRefresh() {
@@ -46,13 +55,6 @@ Page({
         const overall = calcOverallStats(records, players);
         // 玩法统计
         const ruleStats = calcRuleStats(records);
-        // 玩法颜色
-        const RULE_COLORS = {
-            blood: '#4A9D7E',
-            qiaom: '#1D9E75',
-            tuidaoh: '#D4537E',
-            guobiao: '#BA7517'
-        };
         // 列表数据
         const list = records.map(r => {
             const sorted = [...r.players].sort((a, b) => b.score - a.score);
@@ -71,7 +73,7 @@ Page({
                 relativeText: relativeTime(r.playedAt),
                 ruleLabel: RULE_LABELS[r.ruleType] || r.ruleName,
                 ruleType: r.ruleType,
-                ruleColor: RULE_COLORS[r.ruleType] || '#4A9D7E',
+                ruleColor: ruleColor(r.ruleType, r.ruleName),
                 durationLabel: DURATION_LABELS[r.duration],
                 playerCount: r.players.length,
                 totalNet: winner.score,
@@ -102,7 +104,10 @@ Page({
             hasRecords: list.length > 0,
             selectedRuleFilter: 'all',
             selectedFilterIndex,
-            selectedFilterLabel
+            selectedFilterLabel,
+            // 广告：仅免费用户展示；后台未配置广告位 ID 时不渲染
+            showAd: adEnabled('recordsBanner', isPro()),
+            adUnitId: adUnitId('recordsBanner')
         });
     },
     onRuleFilterChange(e) {
@@ -119,7 +124,7 @@ Page({
         const filter = this.data.selectedRuleFilter;
         const filtered = filter === 'all'
             ? this.data.records
-            : this.data.records.filter(r => r.ruleType === filter);
+            : filterRecordsByRule(this.data.records, filter);
         this.setData({ filteredRecords: filtered });
     },
     onRecordTap(e) {

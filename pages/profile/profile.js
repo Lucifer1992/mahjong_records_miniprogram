@@ -1,9 +1,10 @@
 // pages/profile/profile.ts
 // 个人中心
-import { getPlayers, getRecords, getSettings, updateSettings, exportAll, importAll, clearAll } from '../../utils/storage';
+import { promptLoginIfNeeded, requireLogin } from '../../utils/auth';
+import { getPlayers, getRecords, getSettings, updateSettings, exportAll, importAll, clearAll, getMe, renameMe } from '../../utils/storage';
 import { getSyncStatus, getPendingCount, syncFull, pullAndMerge, refreshTier } from '../../utils/sync';
 import { getTier, isPro, getFreeWindowDates } from '../../utils/tier';
-import { API_BASE } from '../../utils/api';
+import { API_BASE, updateNickname, fetchMe, hasToken } from '../../utils/api';
 import { formatDateTime } from '../../utils/date';
 import { isDevEnv, loadMockData, hasSnapshot, restoreSnapshot } from '../../utils/mock';
 /** 导出备份文件的命名前缀（同时用于识别并清理旧备份） */
@@ -14,7 +15,7 @@ const BACKUP_PREFIX = '雀战录备份_';
  * 「云端同步」这一组的描述必须随等级变化——免费用户点同步前就该知道
  * "云端只留最近几天"，而不是同步完才发现历史被淘汰了。
  */
-function buildMenuSections(tier, windowDates) {
+function buildMenuSections(tier, windowDates, myNickname) {
     const pro = tier === 'pro';
     return [
         {
@@ -48,6 +49,7 @@ function buildMenuSections(tier, windowDates) {
         {
             title: '偏好设置',
             items: [
+                { id: 'nickname', icon: '✏️', iconType: 'info', title: '我的昵称', desc: myNickname, action: 'tap' },
                 { id: 'sound', icon: '🔊', iconType: 'bell', title: '操作音效', desc: '保存战绩时震动反馈', action: 'switch', value: true }
             ]
         },
@@ -79,13 +81,15 @@ Page({
         settings: null,
         version: '1.0.0',
         buildTime: '2026-09-11',
+        accountName: '', // 云端账户昵称（登录后显示）
+        accountAvatar: '', // 云端头像完整 URL（空 = 显示默认 🀄）
         syncStatus: 'idle',
         apiBase: API_BASE,
         // 等级分层
         tier: 'free',
         isPro: false,
         cloudWindowDates: 3,
-        menuSections: buildMenuSections('free', 3),
+        menuSections: buildMenuSections('free', 3, '我'),
         // 工具
         formatDateTime
     },
@@ -94,9 +98,38 @@ Page({
         this.refreshTierAsync();
     },
     onShow() {
+        promptLoginIfNeeded(this);
         this.loadData();
         this.refreshSyncStatus();
         this.refreshTierAsync();
+        this.refreshAccountAsync();
+    },
+    /** 登录抽屉登录成功回调：刷新登录态相关展示 */
+    onLoggedIn() {
+        this.loadData();
+        this.refreshSyncStatus();
+        this.refreshTierAsync();
+        this.refreshAccountAsync();
+    },
+    /**
+     * 拉云端账户信息（昵称/头像）用于顶栏展示
+     * 未登录直接置默认；拉不到沿用现值，不打扰用户
+     */
+    async refreshAccountAsync() {
+        if (!hasToken()) {
+            this.setData({ accountName: '', accountAvatar: '' });
+            return;
+        }
+        try {
+            const me = await fetchMe();
+            const avatar = me.avatar
+                ? (me.avatar.startsWith('http') ? me.avatar : API_BASE + me.avatar)
+                : '';
+            this.setData({ accountName: me.nickname || '', accountAvatar: avatar });
+        }
+        catch (_a) {
+            // 静默：显示现有值
+        }
     },
     /**
      * 从服务端对齐等级（本地缓存可能过期：比如在别的设备上升了 Pro）
@@ -108,13 +141,14 @@ Page({
     },
     /** 按当前等级刷新所有等级相关 UI */
     applyTier() {
+        var _a;
         const tier = getTier();
         const windowDates = getFreeWindowDates();
         this.setData({
             tier,
             isPro: tier === 'pro',
             cloudWindowDates: windowDates,
-            menuSections: buildMenuSections(tier, windowDates)
+            menuSections: buildMenuSections(tier, windowDates, ((_a = getMe()) === null || _a === void 0 ? void 0 : _a.nickname) || '我')
         });
     },
     loadData() {
@@ -371,6 +405,9 @@ Page({
      * 我们在弹窗里把这件事说清楚，而不是偷偷删。
      */
     onSync() {
+        // 云端同步需要登录态（pushBatch 必须带 token）；未登录先弹抽屉
+        if (!requireLogin(this))
+            return;
         const records = getRecords();
         if (records.length === 0) {
             wx.showToast({ title: '还没有战绩可同步', icon: 'none' });
@@ -418,6 +455,9 @@ Page({
      * 修复点：这个按钮以前压根没接上线，而且底层 pullAndMerge 也从不写回本地。
      */
     onPull() {
+        // 拉取云端需要登录态；未登录先弹抽屉
+        if (!requireLogin(this))
+            return;
         const records = getRecords();
         const pro = isPro();
         const windowDates = getFreeWindowDates();
@@ -472,6 +512,40 @@ Page({
         }
         wx.showToast({ title: 'Pro 支付即将上线', icon: 'none' });
     },
+    // ========== 我的昵称 ==========
+    /**
+     * 修改昵称：改本地「我」的玩家档案（历史战绩里的名字是当时快照，不回改），
+     * 同时尽力同步到云端（失败不影响本地生效，下次同步时用户可再改）。
+     */
+    onEditNickname() {
+        var _a;
+        const current = ((_a = getMe()) === null || _a === void 0 ? void 0 : _a.nickname) || '';
+        wx.showModal({
+            title: '修改昵称',
+            content: current ? `当前：${current}` : '给自己起个牌桌昵称（10 字以内）',
+            editable: true,
+            placeholderText: current || '如：铁匠',
+            confirmText: '保存',
+            success: (modal) => {
+                if (!modal.confirm)
+                    return;
+                const name = (modal.content || '').trim();
+                if (!name) {
+                    wx.showToast({ title: '昵称不能为空', icon: 'none' });
+                    return;
+                }
+                const r = renameMe(name);
+                if (!r.ok) {
+                    wx.showToast({ title: r.message, icon: 'none' });
+                    return;
+                }
+                // 云端尽力同步（静默失败）
+                updateNickname(name).catch(() => { });
+                wx.showToast({ title: '已更新', icon: 'success' });
+                this.applyTier(); // 刷新菜单里的昵称描述
+            }
+        });
+    },
     // ========== 菜单点击 ==========
     onMenuTap(e) {
         const id = e.currentTarget.dataset.id;
@@ -495,6 +569,9 @@ Page({
                 break;
             case 'clear':
                 this.onClear();
+                break;
+            case 'nickname':
+                this.onEditNickname();
                 break;
             case 'about':
                 wx.showModal({

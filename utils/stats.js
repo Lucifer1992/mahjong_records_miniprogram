@@ -57,12 +57,13 @@ export function calcOverallStats(records, players) {
 export function calcRuleStats(records) {
     const map = new Map();
     for (const r of records) {
-        const key = r.ruleType;
+        // 自定义玩法按名字区分（不同自定义玩法是不同分组），预设按 ruleType
+        const key = r.ruleType === 'custom' ? `custom:${r.ruleName}` : r.ruleType;
         const score = selfScore(r);
         let stat = map.get(key);
         if (!stat) {
             stat = {
-                ruleType: r.ruleType,
+                ruleType: key,
                 ruleName: r.ruleName,
                 games: 0,
                 wins: 0,
@@ -96,6 +97,11 @@ export function filterRecordsByMonth(records, year, month) {
 export function filterRecordsByRule(records, ruleType) {
     if (!ruleType)
         return records;
+    // 自定义玩法的筛选 key 是 'custom:名字' 复合形式
+    if (ruleType.startsWith('custom:')) {
+        const name = ruleType.slice('custom:'.length);
+        return records.filter(r => r.ruleType === 'custom' && r.ruleName === name);
+    }
     return records.filter(r => r.ruleType === ruleType);
 }
 /**

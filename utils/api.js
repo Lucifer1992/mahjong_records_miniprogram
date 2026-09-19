@@ -20,8 +20,29 @@ function getToken() {
 export function setToken(token) {
     wx.setStorageSync('mahjong:token', token);
 }
+export function hasToken() {
+    return !!wx.getStorageSync('mahjong:token');
+}
 export function clearToken() {
     wx.removeStorageSync('mahjong:token');
+}
+/** 401 后在当前页弹出登录抽屉（组件由各 tab 页挂在 #loginDrawer 上） */
+let redirectingToLogin = false;
+function redirectLogin() {
+    if (redirectingToLogin)
+        return;
+    redirectingToLogin = true;
+    setTimeout(() => { redirectingToLogin = false; }, 1000);
+    try {
+        const pages = getCurrentPages();
+        const cur = pages[pages.length - 1];
+        const drawer = cur && cur.selectComponent ? cur.selectComponent('#loginDrawer') : null;
+        if (drawer)
+            drawer.show();
+    }
+    catch (e) {
+        // 找不到抽屉（如协议页）就静默，用户回到 tab 页后操作会再触发
+    }
 }
 export async function request(opts) {
     const headers = { 'Content-Type': 'application/json' };
@@ -44,8 +65,9 @@ export async function request(opts) {
                     resolve(body.data);
                 }
                 else if (res.statusCode === 401) {
-                    // token 失效 → 清掉，后续由业务跳登录
+                    // token 失效 → 清掉并弹登录抽屉（半屏抽屉方案）
                     clearToken();
+                    redirectLogin();
                     reject(new ApiError('UNAUTHORIZED', '登录已过期，请重新登录', 401));
                 }
                 else {
@@ -78,6 +100,38 @@ export function wxLogin(code, nickname, avatar) {
         auth: false
     });
 }
+/**
+ * 上传头像（wx.chooseAvatar 的临时文件 → 服务器，返回可直接访问的 URL）
+ * 必须在登录（有 token）后调用
+ */
+export function uploadAvatar(filePath) {
+    return new Promise((resolve, reject) => {
+        wx.uploadFile({
+            url: `${API_BASE}/api/upload/avatar`,
+            filePath,
+            name: 'file',
+            header: { Authorization: `Bearer ${getToken()}` },
+            timeout: 15000,
+            success: (res) => {
+                try {
+                    const body = JSON.parse(res.data);
+                    if (res.statusCode >= 200 && res.statusCode < 300 && body.code === 0) {
+                        resolve(body.data);
+                    }
+                    else {
+                        reject(new ApiError('UPLOAD_FAILED', body.message || '头像上传失败', res.statusCode));
+                    }
+                }
+                catch (_a) {
+                    reject(new ApiError('UPLOAD_FAILED', '头像上传响应异常', res.statusCode));
+                }
+            },
+            fail: (err) => {
+                reject(new ApiError('NETWORK_ERROR', err.errMsg || '头像上传失败', 0));
+            }
+        });
+    });
+}
 /** 当前用户（含等级 + 当前生效额度） */
 export function fetchMe() {
     return request({
@@ -89,6 +143,26 @@ export function fetchMe() {
 /** 上传单条战绩 */
 export function pushRecord(record) {
     return request({ url: '/api/records', method: 'POST', data: record, silent: true });
+}
+/** 修改云端昵称（本地玩家档案由调用方更新；失败不阻断本地改名） */
+export function updateNickname(nickname) {
+    return request({
+        url: '/api/users/me',
+        method: 'PATCH',
+        data: { nickname },
+        silent: true,
+        showError: false
+    });
+}
+/** 更新账户资料（昵称 / 头像 URL，登录后头像上传完成时调用） */
+export function updateProfile(patch) {
+    return request({
+        url: '/api/users/me',
+        method: 'PATCH',
+        data: patch,
+        silent: true,
+        showError: false
+    });
 }
 /**
  * 批量同步
@@ -112,26 +186,6 @@ export function fetchRecords(params) {
         // 失败由调用方（pullAndMerge）统一提示，这里再弹一次会 double toast
         showError: false
     });
-}
-/** 拉取福星克星 */
-export function fetchFortune(playerId, topN = 5) {
-    return request({
-        url: `/api/stats/fortune?playerId=${playerId}&topN=${topN}`,
-        silent: true
-    });
-}
-/** 拉取牌运月历 */
-export function fetchCalendar(year, month, nickname) {
-    const qs = nickname ? `&nickname=${encodeURIComponent(nickname)}` : '';
-    return request({
-        url: `/api/stats/calendar?year=${year}&month=${month}${qs}`,
-        silent: true
-    });
-}
-/** 拉取总览 */
-export function fetchSummary(nickname) {
-    const qs = nickname ? `?nickname=${encodeURIComponent(nickname)}` : '';
-    return request({ url: `/api/stats/summary${qs}`, silent: true });
 }
 /** 健康检查（用于判断后端是否可达） */
 export function healthCheck() {

@@ -1,8 +1,7 @@
 // app.ts
 import { bootSync } from './utils/sync';
 import { getRecords } from './utils/storage';
-import { wxLogin, setToken } from './utils/api';
-import { setTier } from './utils/tier';
+import { hasToken } from './utils/api';
 App({
     globalData: {
         userInfo: undefined,
@@ -39,32 +38,22 @@ App({
         }
     },
     /**
-     * 云端启动：登录 + 触发同步
-     * 失败完全静默，不影响本地使用
+     * 云端启动：仅已登录用户触发同步
+     *
+     * 登录策略（2026-09-19）：半屏登录抽屉（components/login-drawer），
+     * 浏览不受限，需要登录态的操作/401 时在当前页弹出抽屉；
+     * 登录成功后由抽屉自行触发首次同步。
      */
     async bootstrapCloud() {
-        // 1. 静默登录（拿 code → 后端换 token）
+        if (!hasToken())
+            return;
+        const records = getRecords();
         try {
-            const loginRes = await new Promise((resolve, reject) => {
-                wx.login({ success: resolve, fail: reject });
-            });
-            if (loginRes.code) {
-                const result = await wxLogin(loginRes.code);
-                setToken(result.token);
-                // 登录响应直接带 tier，先写进缓存，避免首屏闪一下错误的等级文案
-                if (result.user && result.user.tier)
-                    setTier(result.user.tier);
-                this.globalData.loggedIn = true;
-                console.log('[App] 云端登录成功');
-            }
+            await bootSync(records);
         }
         catch (e) {
-            console.warn('[App] 云端登录失败（不影响本地使用）', e);
-            return;
+            console.warn('[App] 启动同步失败（不影响本地使用）', e);
         }
-        // 2. 触发同步
-        const records = getRecords();
-        await bootSync(records);
     },
     /**
      * 全局错误处理

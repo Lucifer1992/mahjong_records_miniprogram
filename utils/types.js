@@ -8,12 +8,18 @@ export const PLAYER_COLORS = [
     '#3B6D11', '#185FA5'
 ];
 /**
- * 玩法标签
+ * 玩法标签（预设玩法；custom 的 ruleName 是用户输入，走各处 fallback）
  */
 export const RULE_LABELS = {
     xuezhan: '血战到底',
+    xueliu: '血流成河',
+    tuidaohu: '广东推倒胡',
     qiaoma: '上海敲麻',
-    tuidaohu: '广东推倒胡'
+    hongzhong: '红中麻将',
+    zhuaji: '捉鸡麻将',
+    guobiao: '国标麻将',
+    riichi: '日本麻将',
+    custom: '自定义玩法'
 };
 /**
  * 时段标签
