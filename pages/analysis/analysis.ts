@@ -1,18 +1,24 @@
 // pages/analysis/analysis.ts
 // 分析页 - 福星克星 + 牌运月历
 
-import { GameRecord, Player, FortuneAnalysis, CalendarDay } from '../../utils/types';
+import { GameRecord, Player, FortuneAnalysis, CalendarDay, PartnerStat } from '../../utils/types';
+import { promptLoginIfNeeded } from '../../utils/auth';
 import { getRecords, getPlayers } from '../../utils/storage';
 import { analyzeFortune, formatWinRate, formatNetScore } from '../../utils/fortune';
 import { buildCalendar, shiftMonth, CalendarData, CalendarCell } from '../../utils/calendar';
 import { MIN_GAMES_FOR_ANALYSIS } from '../../utils/constants';
 import { formatDate } from '../../utils/date';
+import { isPro } from '../../utils/tier';
+import { showRewardedAd, grantAdUnlock, isAdUnlocked } from '../../utils/ads';
 
 interface TabItem {
   id: 'fortune' | 'calendar';
   name: string;
   icon: string;
 }
+
+/** 免费用户看广告解锁完整克星榜的 storage key（24 小时有效） */
+const FORTUNE_UNLOCK_KEY = 'fortuneFull';
 
 Page({
   data: {
@@ -30,6 +36,10 @@ Page({
     enoughData: false,
     totalGames: 0,
     relevantGames: 0,
+    // 克星榜分层：免费只亮 TOP1，看广告 / Pro 解锁完整榜
+    fortuneLocked: false,
+    evilVisible: [] as PartnerStat[],
+    evilHiddenCount: 0,
     formatWinRate,
     formatNetScore,
 
@@ -55,6 +65,12 @@ Page({
   },
 
   onShow() {
+    promptLoginIfNeeded(this);
+    this.loadData();
+  },
+
+  /** 登录抽屉登录成功回调：刷新分析数据 */
+  onLoggedIn() {
     this.loadData();
   },
 
@@ -90,12 +106,47 @@ Page({
       enoughData: records.length >= MIN_GAMES_FOR_ANALYSIS,
       totalGames,
       relevantGames,
+      ...this.evilView(analysis),
       currentYear: year,
       currentMonth: month,
       monthText: `${year}年${month}月`,
       calendarCells: calendar.cells,
       calendarStats: calendar.stats
     });
+  },
+
+  /**
+   * 克星榜分层视图：Pro / 已看广告解锁 → 完整榜；
+   * 免费未解锁 → 只亮 TOP1，其余计数隐藏（福星区不设墙，正反馈免费看）
+   */
+  evilView(analysis: FortuneAnalysis | null): { fortuneLocked: boolean; evilVisible: PartnerStat[]; evilHiddenCount: number } {
+    const evil = analysis?.evilPartners || [];
+    if (isPro() || isAdUnlocked(FORTUNE_UNLOCK_KEY)) {
+      return { fortuneLocked: false, evilVisible: evil, evilHiddenCount: 0 };
+    }
+    return {
+      fortuneLocked: true,
+      evilVisible: evil.slice(0, 1),
+      evilHiddenCount: Math.max(0, evil.length - 1)
+    };
+  },
+
+  /** 「看视频解锁完整克星榜（24 小时）」 */
+  async onWatchUnlockAd() {
+    const ok = await showRewardedAd();
+    if (!ok) {
+      wx.showToast({ title: '看完完整视频才能解锁哦', icon: 'none' });
+      return;
+    }
+    grantAdUnlock(FORTUNE_UNLOCK_KEY);
+    this.setData(this.evilView(this.data.analysis));
+    wx.showToast({ title: '已解锁 24 小时', icon: 'success' });
+    wx.vibrateShort({ type: 'light' });
+  },
+
+  /** 升级 Pro 永久解锁 → 跳「我的」页 */
+  onGoUpgrade() {
+    wx.switchTab({ url: '/pages/profile/profile' });
   },
 
   onTabChange(e: WechatMiniprogram.TapEvent) {
@@ -116,7 +167,8 @@ Page({
       selectedPlayerId: selectedPlayer.id,
       selectedPlayerIndex: idx,
       analysis,
-      relevantGames
+      relevantGames,
+      ...this.evilView(analysis)
     });
   },
 
@@ -188,7 +240,8 @@ Page({
           selectedPlayerId: selectedPlayer.id,
           selectedPlayerIndex: idx,
           analysis,
-          relevantGames
+          relevantGames,
+          ...this.evilView(analysis)
         });
       }
     });

@@ -1,12 +1,21 @@
 // utils/types.ts - 全局类型定义
 
 /**
- * 玩法类型
- * xuezhan: 血战到底（川麻主流）
- * qiaoma: 上海敲麻
- * tuidaohu: 推倒胡（广东主流）
+ * 玩法类型（预设）
+ * xuezhan:   血战到底（川麻主流）
+ * xueliu:    血流成河（川麻）
+ * tuidaohu:  推倒胡（广东主流）
+ * qiaoma:    上海敲麻
+ * hongzhong: 红中麻将（鄂/豫主流，红中赖子/红中血流）
+ * zhuaji:    捉鸡麻将（贵州主流）
+ * guobiao:   国标麻将
+ * riichi:    日本麻将（立直）
+ * custom:    自定义玩法（ruleName 存用户输入的名字）
  */
-export type RuleType = 'xuezhan' | 'qiaoma' | 'tuidaohu';
+export type RuleType =
+  | 'xuezhan' | 'xueliu' | 'tuidaohu' | 'qiaoma'
+  | 'hongzhong' | 'zhuaji' | 'guobiao' | 'riichi'
+  | 'custom';
 
 /**
  * 时段
@@ -102,6 +111,8 @@ export interface Settings {
   theme: 'light' | 'dark';
   firstLaunchAt: number;
   soundEnabled: boolean;
+  /** 「我」绑定的玩家档案 ID（昵称修改 / 首页快捷加我 都基于它） */
+  myPlayerId?: string;
 }
 
 /**
@@ -114,12 +125,18 @@ export const PLAYER_COLORS = [
 ];
 
 /**
- * 玩法标签
+ * 玩法标签（预设玩法；custom 的 ruleName 是用户输入，走各处 fallback）
  */
 export const RULE_LABELS: Record<RuleType, string> = {
   xuezhan: '血战到底',
+  xueliu: '血流成河',
+  tuidaohu: '广东推倒胡',
   qiaoma: '上海敲麻',
-  tuidaohu: '广东推倒胡'
+  hongzhong: '红中麻将',
+  zhuaji: '捉鸡麻将',
+  guobiao: '国标麻将',
+  riichi: '日本麻将',
+  custom: '自定义玩法'
 };
 
 /**

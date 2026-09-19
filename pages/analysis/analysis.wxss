@@ -604,3 +604,76 @@
   margin-top: 8rpx;
   opacity: 0.8;
 }
+/* ===== 克星榜锁定态（免费版） ===== */
+.evil-lock-card {
+  margin-top: 16rpx;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  background: rgba(163, 45, 45, 0.05);
+  border: 1rpx dashed rgba(163, 45, 45, 0.35);
+}
+
+.evil-lock-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.evil-lock-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: #F1EFE8;
+  color: #888780;
+  font-size: 32rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.evil-lock-text {
+  flex: 1;
+}
+
+.evil-lock-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #A32D2D;
+}
+
+.evil-lock-sub {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: #9B9A93;
+}
+
+.evil-lock-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.evil-lock-btn {
+  flex: 1;
+  text-align: center;
+  padding: 18rpx 0;
+  border-radius: 32rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+}
+
+.evil-lock-btn:active {
+  transform: scale(0.97);
+}
+
+.evil-lock-btn-ad {
+  background: #FAEEDA;
+  color: #854F0B;
+}
+
+.evil-lock-btn-pro {
+  background: #4A9D7E;
+  color: #fff;
+}

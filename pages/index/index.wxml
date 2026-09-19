@@ -99,6 +99,7 @@
              bindinput="onPlayerInput"
              bindconfirm="onAddPlayer"
              maxlength="10" />
+      <view wx:if="{{ showAddMe }}" class="add-me-btn" bindtap="onAddMe">＋ 我</view>
       <view class="add-btn {{ newPlayerName ? 'add-btn-active' : '' }}" bindtap="onAddPlayer">
         <text class="add-btn-icon">+</text>
         <text>添加</text>
@@ -210,3 +211,5 @@
     </view>
   </view>
 </view>
+<!-- 登录抽屉（未登录时由 utils/auth 弹出；登录成功回调刷新页面数据） -->
+<login-drawer id="loginDrawer" bind:loggedin="onLoggedIn" />

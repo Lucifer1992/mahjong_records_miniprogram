@@ -110,7 +110,7 @@
       </view>
 
       <view wx:else class="fortune-list">
-        <view wx:for="{{ analysis.evilPartners }}" wx:key="partnerId"
+        <view wx:for="{{ evilVisible }}" wx:key="partnerId"
               class="fortune-row fortune-evil">
           <view class="fortune-rank rank-{{ index + 1 }}">
             <text wx:if="{{ index === 0 }}">🥇</text>
@@ -128,6 +128,21 @@
           <view class="fortune-score-wrap">
             <view class="fortune-score t-danger">{{ formatNetScore(item.netScore) }}</view>
             <view class="fortune-score-label">净胜分</view>
+          </view>
+        </view>
+
+        <!-- 免费版锁定态：TOP1 之外隐藏，看广告或升 Pro 解锁 -->
+        <view wx:if="{{ fortuneLocked && evilHiddenCount > 0 }}" class="evil-lock-card">
+          <view class="evil-lock-row">
+            <view class="evil-lock-avatar">?</view>
+            <view class="evil-lock-text">
+              <view class="evil-lock-title">还有 {{ evilHiddenCount }} 位克星被隐藏</view>
+              <view class="evil-lock-sub">看视频免费解锁 24 小时 · Pro 永久解锁</view>
+            </view>
+          </view>
+          <view class="evil-lock-actions">
+            <view class="evil-lock-btn evil-lock-btn-ad" bindtap="onWatchUnlockAd">📺 看视频解锁</view>
+            <view class="evil-lock-btn evil-lock-btn-pro" bindtap="onGoUpgrade">升级 Pro</view>
           </view>
         </view>
       </view>
@@ -244,3 +259,5 @@
   </view>
 
 </view>
+<!-- 登录抽屉（未登录时由 utils/auth 弹出；登录成功回调刷新页面数据） -->
+<login-drawer id="loginDrawer" bind:loggedin="onLoggedIn" />

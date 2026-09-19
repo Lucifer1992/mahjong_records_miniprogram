@@ -656,3 +656,21 @@
   opacity: 0.45;
   pointer-events: none;
 }
+/* ===== 快捷「+ 我」按钮 ===== */
+.add-me-btn {
+  flex-shrink: 0;
+  padding: 0 24rpx;
+  height: 72rpx;
+  line-height: 68rpx;
+  border-radius: 36rpx;
+  border: 2rpx solid #4A9D7E;
+  color: #4A9D7E;
+  font-size: 26rpx;
+  font-weight: 500;
+  background: rgba(74, 157, 126, 0.08);
+}
+
+.add-me-btn:active {
+  transform: scale(0.95);
+  background: rgba(74, 157, 126, 0.18);
+}

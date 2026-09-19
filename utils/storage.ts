@@ -1,6 +1,7 @@
 // utils/storage.ts - 本地存储封装
 
 import type { GameRecord, Player, Settings } from './types';
+import { PLAYER_COLORS } from './types';
 
 /**
  * Storage 键名
@@ -105,7 +106,6 @@ export function findOrCreatePlayer(nickname: string): Player {
   const players = getPlayers();
   let player = players.find(p => p.nickname === nickname);
   if (!player) {
-    const { PLAYER_COLORS } = require('./types');
     player = {
       id: uuid(),
       nickname,
@@ -124,13 +124,78 @@ export function findOrCreatePlayer(nickname: string): Player {
   return player;
 }
 
+// ========== 「我」的身份 ==========
+// 约定：record.players[0] 是「我」（历史数据如此）。
+// 新代码用 settings.myPlayerId 显式绑定；未绑定时回退 players[0] 兼容老用户。
+
+/** 当前用户对应的玩家档案（未记录过牌局时可能为空） */
+export function getMe(): Player | undefined {
+  const settings = getSettings();
+  const players = getPlayers();
+  if (settings.myPlayerId) {
+    const bound = players.find(p => p.id === settings.myPlayerId);
+    if (bound) return bound;
+  }
+  return players.length > 0 ? players[0] : undefined;
+}
+
+/** 取「我」的档案；没有就创建一个（默认昵称「我」）并绑定 */
+export function ensureMe(): Player {
+  const existing = getMe();
+  if (existing) {
+    bindMe(existing.id);
+    return existing;
+  }
+  const player = findOrCreatePlayer('我');
+  bindMe(player.id);
+  return player;
+}
+
+function bindMe(playerId: string): void {
+  const settings = getSettings();
+  if (settings.myPlayerId !== playerId) {
+    updateSettings({ myPlayerId: playerId });
+  }
+}
+
+/**
+ * 修改「我」的昵称（本地玩家档案 + settings 绑定）
+ *
+ * 注意：历史战绩里的 players[].nickname 是当时快照，不回改——记录历史真相。
+ * @returns ok=false 时 message 为失败原因
+ */
+export function renameMe(newName: string): { ok: boolean; message: string } {
+  const name = newName.trim();
+  if (!name) return { ok: false, message: '昵称不能为空' };
+  if (name.length > 10) return { ok: false, message: '昵称不能超过 10 字' };
+
+  const me = ensureMe();
+  const players = getPlayers();
+  if (players.some(p => p.id !== me.id && p.nickname === name)) {
+    return { ok: false, message: '与已有牌友昵称重复' };
+  }
+
+  me.nickname = name;
+  upsertPlayer(me);
+  bindMe(me.id);
+  return { ok: true, message: name };
+}
+
 // ========== 设置 ==========
+
+/**
+ * 模块加载时刻即锁定首次启动时间。
+ * 之前用 `Date.now()` 作为默认值是 bug —— wx.getStorageSync 拿不到值时
+ * 会用“调用 getSettings() 的那一刻”作为 firstLaunchAt，等用户调一次
+ * 再 setSettings 就会把真值刷成 Date.now()，首次启动时间丢失。
+ */
+const FIRST_LAUNCH_AT_FALLBACK = Date.now();
 
 export function getSettings(): Settings {
   return get<Settings>(KEYS.SETTINGS, {
     defaultRuleType: 'xuezhan',
     theme: 'light',
-    firstLaunchAt: Date.now(),
+    firstLaunchAt: FIRST_LAUNCH_AT_FALLBACK,
     soundEnabled: true
   });
 }

@@ -1,6 +1,7 @@
 // pages/index/index.ts
 // 首页 - 快速记分
 
+import { promptLoginIfNeeded, requireLogin } from '../../utils/auth';
 import {
   RuleType,
   GameDuration,
@@ -10,13 +11,15 @@ import {
 } from '../../utils/types';
 import {
   SUPPORTED_RULES,
+  CUSTOM_RULE_ENTRY,
+  CUSTOM_RULE_NAME_MAX,
   DURATIONS,
   MOODS,
   MIN_PLAYERS,
   MAX_PLAYERS,
   MIN_GAMES_FOR_ANALYSIS
 } from '../../utils/constants';
-import { addRecord, findOrCreatePlayer, getPlayers, getRecords } from '../../utils/storage';
+import { addRecord, findOrCreatePlayer, getPlayers, getRecords, ensureMe, getMe } from '../../utils/storage';
 import { uuid } from '../../utils/storage';
 import { formatDateShort, formatDateTime } from '../../utils/date';
 import { enqueuePush, tryAutoSync } from '../../utils/sync';
@@ -32,10 +35,13 @@ interface DraftPlayer extends PlayerScore {
 
 Page({
   data: {
-    // 玩法选择
-    rules: SUPPORTED_RULES,
+    // 玩法选择（预设 + 末尾"自定义玩法…"入口）
+    rules: [...SUPPORTED_RULES, CUSTOM_RULE_ENTRY],
     selectedRuleIndex: 0,
-    selectedRule: SUPPORTED_RULES[0],
+    selectedRule: SUPPORTED_RULES[0] as { readonly id: string; readonly name: string; readonly desc: string },
+    // 自定义玩法取消输入时的回退目标
+    prevRuleIndex: 0,
+    prevRule: SUPPORTED_RULES[0] as { readonly id: string; readonly name: string; readonly desc: string },
 
     // 时段选择
     durations: DURATIONS,
@@ -50,6 +56,8 @@ Page({
     players: [] as DraftPlayer[],
     newPlayerName: '',
     showSubstitute: false,
+    // 「+ 我」快捷按钮（本局还没加我时显示）
+    showAddMe: false,
 
     // 分数录入
     showSubstituteSection: false,
@@ -75,14 +83,24 @@ Page({
 
   onLoad() {
     this.loadStats();
+    this.refreshMeButton();
   },
 
   onShow() {
+    // 登录策略：浏览不受限；本会话自动弹一次登录抽屉（可关），核心操作另行拦截
+    promptLoginIfNeeded(this);
     // ⚠️ 注意：这里不能再调 loadPlayers()。
     // players 是「本局参与者」，不是牌友档案列表。每切一次 tab 就把档案
     // 灌回来，会让用户删掉的牌友复活，而且 Player 上根本没有 score 字段
     // （求和变 NaN）。改牌友只能走 onAddPlayer / onRemovePlayer。
     this.loadStats();
+    this.refreshMeButton();
+  },
+
+  /** 登录抽屉登录成功回调：刷新首页统计 */
+  onLoggedIn() {
+    this.loadStats();
+    this.refreshMeButton();
   },
 
   // ========== 加载数据 ==========
@@ -136,9 +154,48 @@ Page({
 
   onRuleChange(e: WechatMiniprogram.PickerChange) {
     const idx = Number(e.detail.value);
+    const picked = this.data.rules[idx];
+
+    // 自定义玩法：弹输入框；取消/空则回退到之前的预设
+    if (picked.id === 'custom') {
+      if (this.data.selectedRule.id === 'custom') {
+        // 已经是自定义状态，允许改名
+      } else {
+        this.setData({ prevRuleIndex: idx, prevRule: this.data.selectedRule });
+      }
+      wx.showModal({
+        title: '自定义玩法',
+        content: `玩法名称（${CUSTOM_RULE_NAME_MAX} 字以内），如"办公室麻将"`,
+        editable: true,
+        placeholderText: this.data.selectedRule.id === 'custom' ? this.data.selectedRule.name : '',
+        confirmText: '确定',
+        success: (modal) => {
+          const name = (modal.content || '').trim();
+          if (!modal.confirm || !name) {
+            // 回退：恢复上一次选中的预设
+            const prev = this.data.prevRule || SUPPORTED_RULES[0];
+            this.setData({
+              selectedRule: prev,
+              selectedRuleIndex: this.data.rules.findIndex(r => r.id === (prev as any).id)
+            });
+            return;
+          }
+          if (name.length > CUSTOM_RULE_NAME_MAX) {
+            wx.showToast({ title: `最多 ${CUSTOM_RULE_NAME_MAX} 个字`, icon: 'none' });
+            return;
+          }
+          this.setData({
+            selectedRule: { id: 'custom', name, desc: '自定义玩法' },
+            selectedRuleIndex: idx
+          });
+        }
+      });
+      return;
+    }
+
     this.setData({
       selectedRuleIndex: idx,
-      selectedRule: SUPPORTED_RULES[idx]
+      selectedRule: picked as { readonly id: string; readonly name: string; readonly desc: string }
     });
   },
 
@@ -202,6 +259,44 @@ Page({
       players: [...this.data.players, draft],
       newPlayerName: ''
     });
+    this.refreshMeButton();
+  },
+
+  // ========== 快捷加我 ==========
+
+  /** 「+ 我」按钮可见性：本局还没把我加进去时显示 */
+  refreshMeButton() {
+    const me = getMe();
+    const inGame = !!me && this.data.players.some(p => p.playerId === me.id);
+    this.setData({ showAddMe: !inGame });
+  },
+
+  /** 一键把自己加入本局（取「我」的玩家档案，昵称在「我的页」维护） */
+  onAddMe() {
+    const me = ensureMe();
+    if (this.data.players.some(p => p.playerId === me.id)) {
+      this.setData({ showAddMe: false });
+      return;
+    }
+    if (this.data.players.length >= MAX_PLAYERS) {
+      wx.showToast({ title: `最多 ${MAX_PLAYERS} 人`, icon: 'none' });
+      return;
+    }
+
+    const draft: DraftPlayer = {
+      playerId: me.id,
+      nickname: me.nickname,
+      score: 0,
+      isSubstitute: false,
+      isObserver: false,
+      color: me.color,
+      avatarIdx: (this.data.players.length % 8) + 1,
+      scoreText: '',
+      negative: false
+    };
+    this.setData({ players: [...this.data.players, draft] });
+    this.refreshMeButton();
+    wx.vibrateShort({ type: 'light' });
   },
 
   onRemovePlayer(e: WechatMiniprogram.TapEvent) {
@@ -221,6 +316,7 @@ Page({
         players.splice(idx, 1);
         this.setData({ players });
         this.validateScore();
+        this.refreshMeButton();
       }
     });
   },
@@ -285,6 +381,8 @@ Page({
   // ========== 保存 ==========
 
   async onSave() {
+    // 保存本局需要登录（云端身份 + 同步）；未登录弹抽屉并中断
+    if (!requireLogin(this)) return;
     if (!this.data.saveEnabled) {
       if (this.data.totalScore !== 0) {
         wx.showToast({ title: '总分必须为 0', icon: 'none' });
