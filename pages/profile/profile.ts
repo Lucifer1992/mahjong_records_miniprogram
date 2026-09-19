@@ -5,7 +5,7 @@ import { Player, Settings } from '../../utils/types';
 import { getPlayers, getRecords, getSettings, updateSettings, exportAll, importAll, clearAll } from '../../utils/storage';
 import { getSyncStatus, getPendingCount, syncFull, pullAndMerge, refreshTier } from '../../utils/sync';
 import { getTier, isPro, getFreeWindowDates, type Tier } from '../../utils/tier';
-import { API_BASE, redeemPro } from '../../utils/api';
+import { API_BASE } from '../../utils/api';
 import { formatDateTime } from '../../utils/date';
 import { isDevEnv, loadMockData, hasSnapshot, restoreSnapshot } from '../../utils/mock';
 
@@ -507,8 +507,9 @@ Page({
   /**
    * 升级 Pro
    *
-   * 个人主体开不了微信支付，所以 MVP 用兑换码跑通「付费 → 解锁」。
-   * 将来接支付时替换 redeemPro 即可，分层逻辑不用动。
+   * 兑换码通道已下线（2026-09-19）：变现统一走微信虚拟支付。
+   * P0 会把这里改成跳转 Pro 升级页（wx.requestVirtualPayment），
+   * 上线前先提示"即将上线"占位。
    */
   onUpgrade() {
     if (isPro()) {
@@ -521,39 +522,7 @@ Page({
       return;
     }
 
-    wx.showModal({
-      title: '升级 Pro',
-      content: '请输入兑换码',
-      editable: true,
-      placeholderText: '兑换码',
-      confirmText: '升级',
-      success: async (modal) => {
-        if (!modal.confirm) return;
-
-        const code = (modal.content || '').trim();
-        if (!code) {
-          wx.showToast({ title: '请输入兑换码', icon: 'none' });
-          return;
-        }
-
-        wx.showLoading({ title: '验证中...', mask: true });
-        try {
-          await redeemPro(code);
-          await refreshTier();
-          wx.hideLoading();
-          this.applyTier();
-          wx.showModal({
-            title: '升级成功',
-            content: '已解锁 Pro：云端永久保存全部战绩，换机可完整恢复。',
-            showCancel: false,
-            confirmText: '太好了'
-          });
-        } catch (e: any) {
-          wx.hideLoading();
-          wx.showToast({ title: (e && e.message) || '兑换失败', icon: 'none' });
-        }
-      }
-    });
+    wx.showToast({ title: 'Pro 支付即将上线', icon: 'none' });
   },
 
   // ========== 菜单点击 ==========

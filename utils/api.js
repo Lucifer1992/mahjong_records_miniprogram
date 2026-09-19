@@ -86,21 +86,6 @@ export function fetchMe() {
         showError: false
     });
 }
-/**
- * 兑换码升级 Pro
- *
- * 个人主体开不了微信支付，先用兑换码跑通「付费 → 解锁」闭环。
- * 将来接支付时，把这里换成支付回调即可，其余分层逻辑不用动。
- */
-export function redeemPro(code) {
-    return request({
-        url: '/api/users/redeem',
-        method: 'POST',
-        data: { code },
-        // 失败提示由页面自己弹（避免这里 toast 一次、页面再 toast 一次）
-        showError: false
-    });
-}
 /** 上传单条战绩 */
 export function pushRecord(record) {
     return request({ url: '/api/records', method: 'POST', data: record, silent: true });
