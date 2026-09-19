@@ -8,6 +8,9 @@
     "pages/agreement/privacy",
     "pages/agreement/terms"
   ],
+  "usingComponents": {
+    "login-drawer": "/components/login-drawer/login-drawer"
+  },
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#4A9D7E",

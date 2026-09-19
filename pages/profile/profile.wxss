@@ -486,3 +486,10 @@
   font-size: 20rpx;
   color: var(--color-text-tertiary);
 }
+/* 云端头像（登录后显示；圆角裁剪） */
+.avatar-img {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  display: block;
+}

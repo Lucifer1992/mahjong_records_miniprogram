@@ -1,0 +1,42 @@
+<!-- components/login-drawer/login-drawer.wxml -->
+<view class="drawer-mask {{ visible ? 'is-visible' : '' }}" bindtap="onMaskTap">
+  <view class="drawer-panel" catchtap="noop">
+    <view class="drawer-close" bindtap="hide">✕</view>
+
+    <view class="drawer-brand">
+      <view class="drawer-logo">🀄</view>
+      <view class="drawer-title">登录雀战录</view>
+      <view class="drawer-slogan">云端同步战绩 · 换机不丢数据</view>
+    </view>
+
+    <!-- 头像昵称选填（微信官方「头像昵称填写能力」，用户主动点选才有） -->
+    <view class="drawer-profile">
+      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <image wx:if="{{ avatarPath }}" class="avatar-img" src="{{ avatarPath }}" mode="aspectFill" />
+        <view wx:else class="avatar-placeholder">👤</view>
+        <view class="avatar-plus">＋</view>
+      </button>
+      <input class="nickname-input"
+             type="nickname"
+             placeholder="微信昵称（选填）"
+             placeholder-class="nickname-placeholder"
+             value="{{ nickname }}"
+             bindinput="onNicknameInput"
+             maxlength="20" />
+    </view>
+    <view class="drawer-optional-hint">头像昵称选填 · 用于「我的」页账户展示</view>
+
+    <button class="drawer-btn {{ loading ? 'is-loading' : '' }}"
+            bindtap="onLoginTap"
+            disabled="{{ loading }}">
+      {{ loading ? '登录中…' : '微信一键登录' }}
+    </button>
+
+    <view class="drawer-agreement">
+      <text>登录即代表同意</text>
+      <text class="agreement-link" bindtap="onTermsTap">《服务条款》</text>
+      <text>和</text>
+      <text class="agreement-link" bindtap="onPrivacyTap">《隐私政策》</text>
+    </view>
+  </view>
+</view>

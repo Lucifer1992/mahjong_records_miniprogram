@@ -136,4 +136,9 @@
     </view>
   </view>
 
+  <!-- 广告：仅免费用户（Pro 免广告）；后台未配置广告位 ID 时不渲染 -->
+  <ad wx:if="{{ showAd }}" unit-id="{{ adUnitId }}" class="ad-banner"></ad>
+
 </view>
+<!-- 登录抽屉（未登录时由 utils/auth 弹出；登录成功回调刷新页面数据） -->
+<login-drawer id="loginDrawer" bind:loggedin="onLoggedIn" />

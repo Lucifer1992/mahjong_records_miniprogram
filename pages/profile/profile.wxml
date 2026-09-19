@@ -6,10 +6,11 @@
     <view class="user-hero-bg"></view>
     <view class="user-hero-content">
       <view class="user-avatar">
-        <text class="avatar-emoji">🀄</text>
+        <image wx:if="{{ accountAvatar }}" class="avatar-img" src="{{ accountAvatar }}" mode="aspectFill" />
+        <text wx:else class="avatar-emoji">🀄</text>
       </view>
       <view class="user-info">
-        <view class="user-name">雀战录用户</view>
+        <view class="user-name">{{ accountName || '雀战录用户' }}</view>
         <view class="user-meta">{{ totalGames }} 场战绩 · {{ totalPlayers }} 位牌友</view>
       </view>
       <view class="user-badge">
@@ -119,3 +120,5 @@
   </view>
 
 </view>
+<!-- 登录抽屉（未登录时由 utils/auth 弹出；登录成功回调刷新页面数据） -->
+<login-drawer id="loginDrawer" bind:loggedin="onLoggedIn" />
