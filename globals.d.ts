@@ -16,6 +16,7 @@ declare namespace WechatMiniprogram {
   type Target = { dataset: Record<string, any> };
   type PickerChange = { detail: { value: string }; currentTarget: Target };
   type TapEvent = { currentTarget: Target };
+  type TouchEvent = { currentTarget: Target };
   type Input = { detail: { value: string }; currentTarget: Target };
   type SwitchChange = { detail: { value: boolean }; currentTarget: Target };
   type LoginRes = { code: string };

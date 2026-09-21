@@ -14,11 +14,10 @@ export const RULE_LABELS = {
     xuezhan: '血战到底',
     xueliu: '血流成河',
     tuidaohu: '广东推倒胡',
-    qiaoma: '上海敲麻',
-    hongzhong: '红中麻将',
-    zhuaji: '捉鸡麻将',
     guobiao: '国标麻将',
-    riichi: '日本麻将',
+    erren: '二人雀神',
+    wuhanhua: '武汉花麻将',
+    changsha: '长沙麻将',
     custom: '自定义玩法'
 };
 /**

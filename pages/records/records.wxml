@@ -59,6 +59,15 @@
     </view>
   </view>
 
+  <!-- 牌友过滤提示（从首页"查看该牌友历史"入口进来时显示） -->
+  <view wx:if="{{ nicknameFilter }}" class="nickname-filter-bar">
+    <text class="nickname-filter-icon">🎯</text>
+    <text class="nickname-filter-text">只看「{{ nicknameFilter }}」的战绩</text>
+    <view class="nickname-filter-clear" bindtap="onClearNicknameFilter">
+      <text>×</text>
+    </view>
+  </view>
+
   <!-- 筛选 -->
   <view wx:if="{{ records.length > 0 }}" class="filter-bar">
     <picker mode="selector" range="{{ ruleFilterOptions }}" range-key="name"

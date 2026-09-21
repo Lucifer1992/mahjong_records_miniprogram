@@ -1,16 +1,65 @@
 <!-- components/login-drawer/login-drawer.wxml -->
+<!-- 主抽屉：精简版，只负责登录本身 -->
 <view class="drawer-mask {{ visible ? 'is-visible' : '' }}" bindtap="onMaskTap">
-  <view class="drawer-panel" catchtap="noop">
+  <view class="drawer-panel drawer-panel-main" catchtap="noop">
     <view class="drawer-close" bindtap="hide">✕</view>
 
+    <!-- Logo + 品牌区 -->
     <view class="drawer-brand">
-      <view class="drawer-logo">🀄</view>
+      <view class="drawer-logo">
+        <view class="drawer-logo-inner"></view>
+      </view>
       <view class="drawer-title">登录雀战录</view>
-      <view class="drawer-slogan">云端同步战绩 · 换机不丢数据</view>
+      <view class="drawer-slogan">记录每一局的荣耀</view>
     </view>
 
-    <!-- 头像昵称选填（微信官方「头像昵称填写能力」，用户主动点选才有） -->
-    <view class="drawer-profile">
+    <!-- 好处列表 -->
+    <view class="drawer-benefits">
+      <view class="benefit-item">
+        <view class="benefit-icon">
+          <view class="benefit-icon-dot"></view>
+        </view>
+        <view class="benefit-text">
+          <view class="benefit-title">云端同步，换手机不丢失</view>
+          <view class="benefit-sub">所有战绩安全存储</view>
+        </view>
+      </view>
+      <view class="benefit-item">
+        <view class="benefit-icon">
+          <view class="benefit-icon-dot"></view>
+        </view>
+        <view class="benefit-text">
+          <view class="benefit-title">福星克星分析</view>
+          <view class="benefit-sub">AI 智能分析牌友关系</view>
+        </view>
+      </view>
+    </view>
+
+    <button class="drawer-btn drawer-btn-wechat {{ loading ? 'is-loading' : '' }}"
+            bindtap="onLoginTap"
+            disabled="{{ loading }}">
+      <view class="btn-wechat-icon"></view>
+      {{ loading ? '登录中…' : '微信一键登录' }}
+    </button>
+
+    <view class="drawer-agreement">
+      <text>登录即代表同意</text>
+      <text class="agreement-link" bindtap="onTermsTap">《服务条款》</text>
+      <text>和</text>
+      <text class="agreement-link" bindtap="onPrivacyTap">《隐私政策》</text>
+    </view>
+  </view>
+</view>
+
+<!-- 完善资料子抽屉：登录成功后弹出，可跳过 -->
+<view class="drawer-mask {{ profileVisible ? 'is-visible' : '' }}" bindtap="onProfileMaskTap">
+  <view class="drawer-panel drawer-panel-profile" catchtap="noop">
+    <view class="drawer-close" bindtap="skipProfile">✕</view>
+
+    <view class="drawer-title">完善账户信息</view>
+    <view class="drawer-sub">选填，用于「我的」页账户展示</view>
+
+    <view class="drawer-profile-row">
       <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
         <image wx:if="{{ avatarPath }}" class="avatar-img" src="{{ avatarPath }}" mode="aspectFill" />
         <view wx:else class="avatar-placeholder">👤</view>
@@ -24,19 +73,10 @@
              bindinput="onNicknameInput"
              maxlength="20" />
     </view>
-    <view class="drawer-optional-hint">头像昵称选填 · 用于「我的」页账户展示</view>
 
-    <button class="drawer-btn {{ loading ? 'is-loading' : '' }}"
-            bindtap="onLoginTap"
-            disabled="{{ loading }}">
-      {{ loading ? '登录中…' : '微信一键登录' }}
+    <button class="drawer-btn drawer-btn-primary" bindtap="onSaveProfile">
+      保存
     </button>
-
-    <view class="drawer-agreement">
-      <text>登录即代表同意</text>
-      <text class="agreement-link" bindtap="onTermsTap">《服务条款》</text>
-      <text>和</text>
-      <text class="agreement-link" bindtap="onPrivacyTap">《隐私政策》</text>
-    </view>
+    <view class="drawer-skip" bindtap="skipProfile">暂不填写</view>
   </view>
 </view>

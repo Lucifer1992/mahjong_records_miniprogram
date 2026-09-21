@@ -12,7 +12,7 @@
     <view class="agreement-section">
       <view class="section-title">📌 引言</view>
       <view class="section-content">
-        雀战录（以下简称"我们"）由个人开发者运营，致力于提供简单、私密的麻将战绩记录工具。
+        雀战录（以下简称"我们"）是一款由个人开发者运营、运行于微信小程序平台的麻将战绩记录工具。
         我们非常重视你的隐私，本政策说明我们如何收集、使用、存储和保护你的个人信息。
         请仔细阅读，使用我们的服务即表示你同意本政策的全部内容。
       </view>
@@ -24,28 +24,28 @@
         <view class="sub-item">
           <view class="sub-title">1.1 你主动提供的信息</view>
           <view class="sub-content">
-            · 微信小程序登录凭证（openid），用于识别你的账号<br/>
-            · 你设置的玩家昵称（不含真实姓名）<br/>
-            · 你录入的战绩数据（玩法、分数、时间、备注、心情）
+            · 微信小程序登录凭证（openid、session_key），用于识别你的账号<br/>
+            · 你设置的玩家昵称（<text class="hl">建议不要使用真实姓名</text>）<br/>
+            · 你录入的战绩数据：玩法、分数、打牌时间、备注、心情等<br/>
+            · 你主动上传的头像（如选择完善账户信息）
           </view>
         </view>
 
         <view class="sub-item">
           <view class="sub-title">1.2 自动收集的信息</view>
           <view class="sub-content">
-            · 设备型号、操作系统版本（用于兼容性适配）<br/>
-            · 微信小程序版本号<br/>
-            · 网络类型（用于同步策略优化）
+            · 微信小程序基础库版本、客户端系统版本（用于兼容性适配）<br/>
+            · 服务端访问日志（IP、时间戳、接口路径，仅用于安全与故障排查）
           </view>
         </view>
 
         <view class="sub-item">
           <view class="sub-title">1.3 我们不收集的信息</view>
           <view class="sub-content">
-            ❌ 不收集你的真实姓名、身份证、手机号<br/>
-            ❌ 不收集通讯录、位置、相册等敏感权限<br/>
-            ❌ 不收集任何支付信息（暂未开通支付功能）<br/>
-            ❌ 不收集你的微信好友列表
+            ❌ 不收集你的真实姓名、身份证号、手机号<br/>
+            ❌ 不收集通讯录、位置、相册、麦克风等系统权限<br/>
+            ❌ 不收集你的微信好友列表或聊天记录<br/>
+            ❌ 不收集任何用于商业广告画像的信息
           </view>
         </view>
       </view>
@@ -55,9 +55,9 @@
       <view class="section-title">2️⃣ 信息使用方式</view>
       <view class="section-content">
         · 仅用于在你的设备本地 + 你的云端账号之间同步战绩<br/>
-        · 用于聚合统计（如"累计场次"、"总胜率"）<br/>
+        · 用于聚合统计（如"累计场次"、"总胜率"、"福星克星"）<br/>
         · 不会用于广告投放、用户画像、数据贩卖<br/>
-        · 不会与任何第三方共享你的战绩数据
+        · 不会与任何第三方共享你的战绩数据（法律法规要求除外）
       </view>
     </view>
 
@@ -67,23 +67,22 @@
         <view class="sub-item">
           <view class="sub-title">3.1 本地存储</view>
           <view class="sub-content">
-            你的战绩优先存储在你的设备本地（微信小程序 Storage），不依赖网络。
+            你的战绩优先存储在你的设备本地（微信小程序 Storage），不依赖网络，断网可用。
           </view>
         </view>
         <view class="sub-item">
           <view class="sub-title">3.2 云端备份</view>
           <view class="sub-content">
-            若开启云端同步，数据会加密存储在我们的服务器（位于中华人民共和国境内）。
-            服务器使用 HTTPS 传输 + JWT 鉴权 + 数据库软删除。
+            登录后开启云端同步：数据加密存储在部署于中华人民共和国境内的服务器，
+            通过 HTTPS（TLS 1.3）传输，使用 JWT 接口鉴权。
           </view>
         </view>
         <view class="sub-item">
-          <view class="sub-title">3.3 数据安全措施</view>
+          <view class="sub-title">3.3 数据生命周期</view>
           <view class="sub-content">
-            · 传输加密：TLS 1.3<br/>
-            · 密码哈希：bcrypt（仅适用于可选登录密码）<br/>
-            · 定期备份：每日自动备份到加密存储<br/>
-            · 访问审计：所有 API 调用均记录日志
+            · 免费用户云端仅保留「最近 3 个有数据的日期」内的战绩（提升 Pro 不再限制）<br/>
+            · 软删除：删除战绩后 30 天内可恢复，超期自动清除<br/>
+            · 账号注销：清除该账号全部云端数据，操作不可逆
           </view>
         </view>
       </view>
@@ -92,13 +91,13 @@
     <view class="agreement-section">
       <view class="section-title">4️⃣ 你的权利</view>
       <view class="section-content">
-        你随时享有以下权利：
+        你随时享有以下权利（通过"我的"→"导出/清空/注销"自助操作，或联系我们人工处理）：
         <view class="rights-list">
           <view class="right-item">📥 <text>导出</text>你的全部战绩（JSON 格式）</view>
           <view class="right-item">🗑️ <text>删除</text>你的全部数据（不可恢复）</view>
-          <view class="right-item">👁️ <text>查看</text>我们持有的你的信息</view>
-          <view class="right-item">🔄 <text>迁移</text>你的数据到其他设备</view>
+          <view class="right-item">👁️ <text>查看</text>我们持有的与你相关的信息</view>
           <view class="right-item">📴 <text>注销</text>账号（同步清除云端数据）</view>
+          <view class="right-item">🛑 <text>投诉</text>：如认为我们违反法律，可向网信办等监管部门举报</view>
         </view>
       </view>
     </view>
@@ -106,18 +105,21 @@
     <view class="agreement-section">
       <view class="section-title">5️⃣ 第三方服务</view>
       <view class="section-content">
-        我们仅使用以下第三方服务（均为微信官方）：
+        本小程序使用了以下微信小程序平台原生组件 / SDK（由腾讯公司提供）：
         <view class="sub-item">
-          <view class="sub-title">· 微信小程序登录</view>
-          <view class="sub-content">用于静默登录获取 openid，由腾讯公司提供</view>
+          <view class="sub-title">· 微信登录</view>
+          <view class="sub-content">用于静默登录获取 openid（仅返回登录凭证）</view>
         </view>
         <view class="sub-item">
-          <view class="sub-title">· 微信支付（如未来开通）</view>
-          <view class="sub-content">由腾讯支付科技提供，遵循其独立隐私政策</view>
+          <view class="sub-title">· 虚拟支付</view>
+          <view class="sub-content">升级 Pro 时使用，由腾讯支付科技提供，遵循微信支付独立隐私政策</view>
         </view>
         <view class="sub-item">
-          <view class="sub-title">· 字体服务</view>
-          <view class="sub-content">PingFang SC / SF Pro 由苹果系统提供，不联网</view>
+          <view class="sub-title">· 广告组件（可选）</view>
+          <view class="sub-content">Banner / 激励视频广告由微信小程序广告组件提供，已开启"不展示个性化广告"</view>
+        </view>
+        <view class="sub-content" style="margin-top: 16rpx; color: #9B9A93; font-size: 24rpx;">
+          注：本小程序不集成任何非微信官方的统计、推送、社交等第三方 SDK。
         </view>
       </view>
     </view>
@@ -125,15 +127,15 @@
     <view class="agreement-section">
       <view class="section-title">6️⃣ 儿童隐私</view>
       <view class="section-content">
-        本产品面向成年人（特别是麻将爱好者群体）。如未满 14 周岁，请在监护人同意下使用。
-        我们不会主动收集儿童信息。
+        本产品面向成年人。如未满 14 周岁，应在监护人陪同下阅读本政策并在其同意下使用。
+        我们不会主动识别或收集儿童信息；如监护人发现儿童未经同意提交了个人信息，请联系我们及时删除。
       </view>
     </view>
 
     <view class="agreement-section">
       <view class="section-title">7️⃣ 政策变更</view>
       <view class="section-content">
-        当本政策发生重大变更时，我们会在 App 内显著位置通知，并重新征求你的同意。
+        当本政策发生重大变更时，我们会在小程序内显著位置通知，并重新征求你的同意。
         继续使用服务即视为接受变更。
       </view>
     </view>
@@ -144,15 +146,15 @@
         如你对隐私有任何疑问、投诉或请求，请通过以下方式联系：
         <view class="contact-info">
           · 微信小程序内"我的"→"意见反馈"<br/>
-          · 邮箱：privacy@paiyunbao.example<br/>
-          · 我们会在 7 个工作日内回复
+          · 邮箱：quezhanlu@example.com<br/>
+          · 我们会在 <text class="hl">15 个工作日</text>内回复
         </view>
       </view>
     </view>
 
     <view class="agreement-footer">
       <view class="footer-version">雀战录 · 隐私政策 · {{ version }}</view>
-      <view class="footer-meta">本政策依据《个人信息保护法》《网络安全法》制定</view>
+      <view class="footer-meta">本政策依据《个人信息保护法》《网络安全法》《数据安全法》制定</view>
     </view>
   </view>
 </view>

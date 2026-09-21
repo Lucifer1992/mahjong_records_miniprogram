@@ -1,4 +1,6 @@
 /* components/login-drawer/login-drawer.wxss */
+
+/* ========== 通用遮罩 / 抽屉 ========== */
 .drawer-mask {
   position: fixed;
   top: 0;
@@ -10,7 +12,7 @@
   display: flex;
   align-items: flex-end;
   opacity: 0;
-  pointer-events: none;          /* 隐藏时不挡操作 */
+  pointer-events: none;
   transition: opacity 0.2s ease-out;
 }
 
@@ -24,9 +26,9 @@
   width: 100%;
   background: #FFFFFF;
   border-radius: 32rpx 32rpx 0 0;
-  padding: 64rpx 56rpx calc(env(safe-area-inset-bottom) + 48rpx);
+  padding: 56rpx 56rpx calc(env(safe-area-inset-bottom) + 40rpx);
   box-sizing: border-box;
-  transform: translateY(100%);   /* 默认藏在屏幕外 */
+  transform: translateY(100%);
   transition: transform 0.24s ease-out;
 }
 
@@ -34,10 +36,22 @@
   transform: translateY(0);
 }
 
+/* 主抽屉更紧凑：上下 padding 缩小 */
+.drawer-panel-main {
+  padding-top: 48rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 32rpx);
+}
+
+/* 子抽屉更紧凑 */
+.drawer-panel-profile {
+  padding-top: 40rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 28rpx);
+}
+
 .drawer-close {
   position: absolute;
-  top: 28rpx;
-  right: 32rpx;
+  top: 24rpx;
+  right: 28rpx;
   width: 56rpx;
   height: 56rpx;
   line-height: 56rpx;
@@ -46,126 +60,138 @@
   color: #B0AFA8;
 }
 
-/* ---------- 品牌区 ---------- */
+/* ========== 品牌区 ========== */
 .drawer-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 56rpx;
+  text-align: center;
+  margin-bottom: 28rpx;
 }
 
 .drawer-logo {
-  width: 108rpx;
-  height: 108rpx;
+  width: 120rpx;
+  height: 120rpx;
+  background: linear-gradient(135deg, #4A9D7E, #3A8A6A);
   border-radius: 28rpx;
+  margin: 0 auto 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(74, 157, 126, 0.35);
+}
+
+.drawer-logo-inner {
+  width: 60rpx;
+  height: 60rpx;
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drawer-logo-inner::after {
+  content: '';
+  width: 28rpx;
+  height: 28rpx;
   background: #4A9D7E;
-  color: #fff;
-  font-size: 60rpx;
-  line-height: 108rpx;
-  text-align: center;
-  margin-bottom: 24rpx;
+  border-radius: 8rpx;
 }
 
 .drawer-title {
   font-size: 36rpx;
-  font-weight: 600;
+  font-weight: 700;
   color: #2B2A26;
+  text-align: center;
 }
 
 .drawer-slogan {
-  margin-top: 12rpx;
+  margin-top: 8rpx;
   font-size: 24rpx;
   color: #9B9A93;
+  text-align: center;
 }
 
-/* ---------- 头像昵称选填 ---------- */
-.drawer-profile {
+/* ========== 好处列表 ========== */
+.drawer-benefits {
+  background: #F7F5F0;
+  border-radius: 28rpx;
+  padding: 28rpx 32rpx;
+  margin-bottom: 32rpx;
+}
+
+.benefit-item {
   display: flex;
   align-items: center;
-  gap: 28rpx;
-  margin-bottom: 16rpx;
+  gap: 20rpx;
 }
 
-.avatar-btn {
-  position: relative;
-  width: 108rpx;
-  height: 108rpx;
-  padding: 0;
-  margin: 0;
-  border-radius: 50%;
-  background: #F1EFE8;
-  overflow: visible;
+.benefit-item + .benefit-item {
+  margin-top: 20rpx;
+}
+
+.benefit-icon {
+  width: 52rpx;
+  height: 52rpx;
+  background: #E1F5EE;
+  border-radius: 14rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
-.avatar-btn::after {
-  border: none;
-}
-
-.avatar-img {
-  width: 108rpx;
-  height: 108rpx;
-  border-radius: 50%;
-  display: block;
-}
-
-.avatar-placeholder {
-  width: 108rpx;
-  height: 108rpx;
-  border-radius: 50%;
-  background: #F1EFE8;
-  font-size: 48rpx;
-  line-height: 108rpx;
-  text-align: center;
-  color: #B0AFA8;
-}
-
-.avatar-plus {
-  position: absolute;
-  right: -6rpx;
-  bottom: -6rpx;
-  width: 40rpx;
-  height: 40rpx;
-  border-radius: 50%;
+.benefit-icon-dot {
+  width: 26rpx;
+  height: 26rpx;
   background: #4A9D7E;
-  color: #fff;
-  font-size: 26rpx;
-  line-height: 40rpx;
-  text-align: center;
+  border-radius: 8rpx;
 }
 
-.nickname-input {
+.benefit-text {
   flex: 1;
-  height: 92rpx;
-  padding: 0 28rpx;
-  border-radius: 24rpx;
-  background: #F7F5F0;
-  font-size: 28rpx;
+  min-width: 0;
+}
+
+.benefit-title {
+  font-size: 26rpx;
   color: #2B2A26;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.nickname-placeholder {
-  color: #B0AFA8;
-}
-
-.drawer-optional-hint {
-  margin-bottom: 32rpx;
+.benefit-sub {
   font-size: 22rpx;
-  color: #B0AFA8;
+  color: #9B9A93;
+  margin-top: 2rpx;
+}
+
+/* ========== 文案 ========== */
+.drawer-sub {
+  margin-top: 10rpx;
+  margin-bottom: 32rpx;
+  font-size: 24rpx;
+  color: #9B9A93;
   text-align: center;
 }
 
-/* ---------- 登录按钮 ---------- */
+.drawer-panel-profile .drawer-sub {
+  margin-bottom: 28rpx;
+}
+
+/* ========== 主登录按钮 ========== */
 .drawer-btn {
   width: 100%;
   height: 92rpx;
   line-height: 92rpx;
   border-radius: 46rpx;
   background: #4A9D7E;
-  color: #fff;
-  font-size: 32rpx;
+  color: #FFFFFF;
+  font-size: 30rpx;
   font-weight: 500;
   text-align: center;
+  margin: 0;
+  padding: 0;
 }
 
 .drawer-btn::after {
@@ -180,14 +206,38 @@
   opacity: 0.7;
 }
 
-.drawer-btn[disabled] {
-  color: #fff;
-  background: #4A9D7E;
+/* 微信绿按钮 */
+.drawer-btn-wechat {
+  background: #07C160;
+  box-shadow: 0 4rpx 16rpx rgba(7, 193, 96, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
 }
 
-/* ---------- 协议 ---------- */
+.btn-wechat-icon {
+  width: 36rpx;
+  height: 36rpx;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-wechat-icon::after {
+  content: '';
+  width: 18rpx;
+  height: 18rpx;
+  background: #07C160;
+  border-radius: 50%;
+}
+
+/* ========== 协议 ========== */
 .drawer-agreement {
-  margin-top: 28rpx;
+  margin-top: 24rpx;
   text-align: center;
   font-size: 22rpx;
   color: #B0AFA8;
@@ -195,4 +245,86 @@
 
 .agreement-link {
   color: #4A9D7E;
+}
+
+/* ========== 完善资料子抽屉 ========== */
+.drawer-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-bottom: 28rpx;
+}
+
+.avatar-btn {
+  position: relative;
+  width: 96rpx;
+  height: 96rpx;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  background: #F1EFE8;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+.avatar-btn::after {
+  border: none;
+}
+
+.avatar-img {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  display: block;
+}
+
+.avatar-placeholder {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: #F1EFE8;
+  font-size: 44rpx;
+  line-height: 96rpx;
+  text-align: center;
+  color: #B0AFA8;
+}
+
+.avatar-plus {
+  position: absolute;
+  right: -6rpx;
+  bottom: -6rpx;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: #4A9D7E;
+  color: #fff;
+  font-size: 24rpx;
+  line-height: 36rpx;
+  text-align: center;
+}
+
+.nickname-input {
+  flex: 1;
+  height: 80rpx;
+  padding: 0 24rpx;
+  border-radius: 20rpx;
+  background: #F7F5F0;
+  font-size: 26rpx;
+  color: #2B2A26;
+  text-align: center;     /* 与头像按钮垂直统一视觉 */
+}
+
+.nickname-placeholder {
+  color: #B0AFA8;
+}
+
+.drawer-skip {
+  margin-top: 20rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #9B9A93;
+}
+
+.drawer-skip:active {
+  opacity: 0.6;
 }

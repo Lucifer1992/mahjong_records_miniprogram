@@ -70,7 +70,7 @@
       </view>
 
       <view wx:else class="fortune-list">
-        <view wx:for="{{ analysis.luckyPartners }}" wx:key="partnerId"
+        <view wx:for="{{ luckyList }}" wx:key="partnerId"
               class="fortune-row fortune-lucky">
           <view class="fortune-rank rank-{{ index + 1 }}">
             <text wx:if="{{ index === 0 }}">🥇</text>
@@ -82,11 +82,11 @@
             <view class="fortune-nick">{{ item.partnerNickname }}</view>
             <view class="fortune-meta">
               <text class="meta-tag">同桌 {{ item.gamesTogether }} 次</text>
-              <text class="meta-tag meta-tag-success">胜率 {{ formatWinRate(item.winRate) }}</text>
+              <text class="meta-tag meta-tag-success">胜率 {{ item.winRateText }}</text>
             </view>
           </view>
           <view class="fortune-score-wrap">
-            <view class="fortune-score t-success">{{ formatNetScore(item.netScore) }}</view>
+            <view class="fortune-score t-success">{{ item.netScoreText }}</view>
             <view class="fortune-score-label">净胜分</view>
           </view>
         </view>
@@ -110,7 +110,7 @@
       </view>
 
       <view wx:else class="fortune-list">
-        <view wx:for="{{ evilVisible }}" wx:key="partnerId"
+        <view wx:for="{{ evilList }}" wx:key="partnerId"
               class="fortune-row fortune-evil">
           <view class="fortune-rank rank-{{ index + 1 }}">
             <text wx:if="{{ index === 0 }}">🥇</text>
@@ -122,11 +122,11 @@
             <view class="fortune-nick">{{ item.partnerNickname }}</view>
             <view class="fortune-meta">
               <text class="meta-tag">同桌 {{ item.gamesTogether }} 次</text>
-              <text class="meta-tag meta-tag-danger">胜率 {{ formatWinRate(item.winRate) }}</text>
+              <text class="meta-tag meta-tag-danger">胜率 {{ item.winRateText }}</text>
             </view>
           </view>
           <view class="fortune-score-wrap">
-            <view class="fortune-score t-danger">{{ formatNetScore(item.netScore) }}</view>
+            <view class="fortune-score t-danger">{{ item.netScoreText }}</view>
             <view class="fortune-score-label">净胜分</view>
           </view>
         </view>
@@ -156,7 +156,7 @@
     </view>
   </view>
 
-  <!-- ============ 牌运月历 Tab ============ -->
+  <!-- ============ 牌局月历 Tab ============ -->
   <view wx:else class="calendar-tab">
 
     <!-- 月份导航 -->
@@ -201,6 +201,8 @@
               data-date="{{ item.date }}"
               bindtap="onDaySelect">
           <view wx:if="{{ item.day }}" class="day-num">{{ item.day }}</view>
+          <view wx:if="{{ item.lunarLabel }}"
+                class="day-lunar {{ item.lunarHighlight ? 'day-lunar-hl' : '' }}">{{ item.lunarLabel }}</view>
           <view wx:if="{{ item.data }}" class="day-score">
             {{ item.data.netScore > 0 ? '+' : '' }}{{ item.data.netScore }}
           </view>
@@ -216,12 +218,46 @@
       <view class="legend-item"><view class="legend-dot dot-none"></view>未打</view>
     </view>
 
+    <!-- 本月宜忌：借黄历的视觉语言，但内容 100% 来自本人历史战绩统计（非预测） -->
+    <view wx:if="{{ advice && (advice.good.length > 0 || advice.bad.length > 0) }}"
+          class="section-card advice-card">
+      <view class="section-header">
+        <view class="section-icon-wrap section-icon-advice">📜</view>
+        <view class="section-title-wrap">
+          <text class="section-title">本月宜忌</text>
+          <text class="section-sub">依据你近 {{ advice.sampleGames }} 局战绩统计</text>
+        </view>
+      </view>
+
+      <view class="advice-grid">
+        <view class="advice-col advice-col-good">
+          <view class="advice-seal advice-seal-good">宜</view>
+          <view wx:for="{{ advice.good }}" wx:key="label" class="advice-item">
+            <view class="advice-label">{{ item.label }}</view>
+            <view class="advice-detail">{{ item.detail }}</view>
+          </view>
+          <view wx:if="{{ advice.good.length === 0 }}" class="advice-none">暂无可推荐</view>
+        </view>
+
+        <view class="advice-col advice-col-bad">
+          <view class="advice-seal advice-seal-bad">忌</view>
+          <view wx:for="{{ advice.bad }}" wx:key="label" class="advice-item">
+            <view class="advice-label">{{ item.label }}</view>
+            <view class="advice-detail">{{ item.detail }}</view>
+          </view>
+          <view wx:if="{{ advice.bad.length === 0 }}" class="advice-none">暂无要避开</view>
+        </view>
+      </view>
+
+      <view class="advice-disclaimer">只统计已发生的战绩，不做任何预测</view>
+    </view>
+
     <!-- 选中日详情 -->
     <view wx:if="{{ selectedDay }}" class="section-card day-detail">
       <view class="detail-header">
         <view>
           <view class="detail-title">{{ selectedDay.date }}</view>
-          <view class="detail-sub">点击查看当日战绩</view>
+          <view class="detail-lunar">{{ selectedDayLunar }}</view>
         </view>
         <view class="detail-close" bindtap="onCloseDayDetail">
           <text>×</text>
@@ -235,7 +271,7 @@
       <view wx:for="{{ selectedDayRecords }}" wx:key="id" class="detail-record">
         <view class="detail-record-head">
           <view class="record-rule-tag">{{ item.ruleName }}</view>
-          <view class="record-time">{{ formatRecordTime(item.playedAt) }}</view>
+          <view class="record-time">{{ item.timeText }}</view>
         </view>
         <view wx:for="{{ item.players }}" wx:for-item="player" wx:key="playerId"
               class="detail-player-row">

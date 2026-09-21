@@ -34,7 +34,9 @@ Page({
     canvasReady: false,
     saving: false,
 
-    // 工具方法
+    // 这两个放 data 是给 WXML 用的（WXML 表达式只解析 this.data，拿不到页面方法）。
+    // ⚠️ 反过来：放进 data 后就 不是 页面实例方法，TS 里写 this.formatDateShort 是 undefined
+    // ——只能用上面 import 进来的同名函数直接调用。
     formatDate,
     formatDateShort
   },
@@ -286,7 +288,7 @@ Page({
     text('🀄 雀战录 · 战绩分享', 375, 70, 'rgba(255,255,255,0.85)', 22, 'center');
     text(record.ruleName, 375, 140, '#FFFFFF', 44, 'center', 'bold');
     text(
-      `${this.formatDateShort(record.playedAt)} · ${DURATION_LABELS[record.duration]}` +
+      `${formatDateShort(record.playedAt)} · ${DURATION_LABELS[record.duration]}` +
       (record.mood ? ` · ${MOOD_EMOJI[record.mood]}` : ''),
       375, 190, 'rgba(255,255,255,0.92)', 22, 'center'
     );
@@ -300,7 +302,7 @@ Page({
 
     // 4. 卡片头部：品牌 + 日期
     text('🀄 雀战录', cardX + 30, cardY + 50, '#4A9D7E', 26, 'left', 'bold');
-    text(this.formatDateShort(record.playedAt), cardX + cardW - 30, cardY + 50, '#9B9A93', 20, 'right');
+    text(formatDateShort(record.playedAt), cardX + cardW - 30, cardY + 50, '#9B9A93', 20, 'right');
 
     // 玩法标签
     const tagText = RULE_LABELS[record.ruleType] || record.ruleName;

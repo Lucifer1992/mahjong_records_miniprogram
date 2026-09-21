@@ -17,14 +17,31 @@ const PENDING_KEY = 'mahjong:sync:pending';     // 待上传的战绩 ID 列表
 const DELETED_KEY = 'mahjong:sync:deleted';     // 待删除的战绩 ID 列表
 const LAST_PULL_AT = 'mahjong:sync:lastPullAt';
 const SYNC_STATUS = 'mahjong:sync:status';      // 'idle' | 'syncing' | 'error'
+const SYNC_STATUS_AT = 'mahjong:sync:statusAt'; // 状态写入时间戳，用于判定「卡住的 syncing」
 
-export type SyncStatus = 'idle' | 'syncing' | 'error' | 'disabled';
+/** syncing 多久没更新就认定进程已中断（分钟） */
+const SYNCING_STALE_MS = 2 * 60 * 1000;
+
+/**
+ * 同步状态四态（**互斥**，别再混着用）
+ * - syncing：此刻真的在传（瞬时态，超过 2 分钟自动降级，防止进程被杀后永久显示「正在同步」）
+ * - error  ：最后一次尝试失败了
+ * - pending：没在传，但队列里还有没送上去的（联网就会自动补）
+ * - idle   ：队列空，云端已同步
+ */
+export type SyncStatus = 'idle' | 'syncing' | 'error' | 'pending' | 'disabled';
 
 function getList(key: string): string[] {
   try { return wx.getStorageSync(key) || []; } catch { return []; }
 }
 function setList(key: string, list: string[]): void {
   try { wx.setStorageSync(key, list); } catch {}
+}
+
+/** 写同步状态（必须连带写时间戳，否则无法判定 stale） */
+function setSyncStatus(status: SyncStatus): void {
+  wx.setStorageSync(SYNC_STATUS, status);
+  wx.setStorageSync(SYNC_STATUS_AT, Date.now());
 }
 
 /**
@@ -51,12 +68,23 @@ export function enqueueDelete(recordId: string): void {
 
 /**
  * 同步状态（供 UI 展示）
+ *
+ * ⚠️ 以前的写法是「队列非空就返回 syncing」，导致网络不通时（队列永远清不掉）
+ * 页面**永久卡在「正在同步...」**，用户根本不知道其实是失败了。
+ * 现在队列非空只是 pending（有货待发），失败走 error，两者都比"正在同步"诚实。
  */
 export function getSyncStatus(): SyncStatus {
-  const pending = getList(PENDING_KEY).length + getList(DELETED_KEY).length;
-  const status = wx.getStorageSync(SYNC_STATUS) as SyncStatus;
-  if (pending > 0) return 'syncing';
-  return status || 'idle';
+  const stored = (wx.getStorageSync(SYNC_STATUS) as SyncStatus) || 'idle';
+  const at = (wx.getStorageSync(SYNC_STATUS_AT) as number) || 0;
+  const pending = getPendingCount();
+
+  const stale = Date.now() - at > SYNCING_STALE_MS;
+  if (stored === 'syncing') {
+    return stale ? (pending > 0 ? 'pending' : 'idle') : 'syncing';
+  }
+  if (stored === 'error') return 'error';
+  if (pending > 0) return 'pending';
+  return stored === 'disabled' ? 'disabled' : 'idle';
 }
 
 /**
@@ -85,11 +113,11 @@ export async function syncNow(records: GameRecord[]): Promise<{
   try {
     await healthCheck();
   } catch {
-    wx.setStorageSync(SYNC_STATUS, 'error');
+    setSyncStatus('error');
     return { pushed: 0, deleted: 0, failed: true };
   }
 
-  wx.setStorageSync(SYNC_STATUS, 'syncing');
+  setSyncStatus('syncing');
 
   const pendingIds = getList(PENDING_KEY);
   const deletedIds = getList(DELETED_KEY);
@@ -115,7 +143,7 @@ export async function syncNow(records: GameRecord[]): Promise<{
           setList(PENDING_KEY, failedIds as string[]);
         }
       } catch {
-        wx.setStorageSync(SYNC_STATUS, 'error');
+        setSyncStatus('error');
         return { pushed, deleted, failed: true };
       }
     } else {
@@ -171,7 +199,7 @@ export async function syncFull(records: GameRecord[]): Promise<{
     return { pushed: 0, failed: 0, trimmed: 0, tier: initialTier, error: '后端不可达' };
   }
 
-  wx.setStorageSync(SYNC_STATUS, 'syncing');
+  setSyncStatus('syncing');
 
   const CHUNK = 200;          // 与后端 zod 的 max(500) 留出余量
   let pushed = 0;
@@ -206,7 +234,7 @@ export async function syncFull(records: GameRecord[]): Promise<{
     setList(PENDING_KEY, Array.from(new Set(failedIds)));
   }
 
-  wx.setStorageSync(SYNC_STATUS, failed > 0 ? 'error' : 'idle');
+  setSyncStatus(failed > 0 ? 'error' : 'idle');
   wx.setStorageSync(LAST_PULL_AT, Date.now());
 
   return { pushed, failed, trimmed, tier, error: undefined };
@@ -333,6 +361,31 @@ export function tryAutoSync(records: GameRecord[]): void {
   setTimeout(() => {
     syncNow(records).catch(() => { /* ignore */ });
   }, 2000);
+}
+
+/**
+ * 「定时同步」的实际形态：回到前台时补一次
+ *
+ * 小程序**没有可用的后台常驻定时器** —— 进后台会被挂起，setInterval 既不可靠也费电，
+ * 真要用还得在 onHide 里清理，漏一个就泄漏。所以这里换成：
+ * 每次回到前台看「距上次成功同步多久」，超过 intervalMs 才真正发请求。
+ * 效果等价于定时轮询，但只在用户真的在用的时候跑。
+ *
+ * 默认 5 分钟。LAST_PULL_AT 在任何一次同步成功后都会刷新。
+ */
+export const AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+
+export function autoSyncIfStale(records: GameRecord[], intervalMs: number = AUTO_SYNC_INTERVAL_MS): void {
+  const token = wx.getStorageSync('mahjong:token');
+  if (!token) return;
+
+  const last = (wx.getStorageSync(LAST_PULL_AT) as number) || 0;
+  if (last && Date.now() - last < intervalMs) return;
+
+  // 已经在传就别重复触发
+  if (getSyncStatus() === 'syncing') return;
+
+  syncNow(records).catch(() => { /* 失败不打扰用户，状态已写 error */ });
 }
 
 /**

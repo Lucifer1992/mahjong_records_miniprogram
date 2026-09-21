@@ -50,7 +50,14 @@
   font-size: 24rpx;
 }
 
-/* ===== 总览卡 ===== */
+/* ===== 总览卡 =====
+   与福星克星共用同一份值（累计场次 / 牌友数 / 相关场次），
+   只是上下文提示，不可点击 → 压缩视觉权重，把版面让给月历与宜忌。 */
+.overview-card {
+  padding: 18rpx 28rpx;
+  margin-bottom: 20rpx;
+}
+
 .overview-row {
   display: flex;
   align-items: center;
@@ -61,25 +68,25 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6rpx;
+  gap: 2rpx;
 }
 
 .overview-num {
-  font-size: 44rpx;
+  font-size: 32rpx;
   font-weight: 600;
   color: var(--color-primary);
   font-feature-settings: 'tnum';
-  letter-spacing: -1rpx;
+  letter-spacing: -0.5rpx;
 }
 
 .overview-label {
-  font-size: 22rpx;
+  font-size: 20rpx;
   color: var(--color-text-tertiary);
 }
 
 .overview-divider {
   width: 1rpx;
-  height: 48rpx;
+  height: 36rpx;
   background: var(--color-border);
 }
 
@@ -139,6 +146,10 @@
 
 .section-icon-evil {
   background: linear-gradient(135deg, #FCEBEB 0%, #F09595 100%);
+}
+
+.section-icon-advice {
+  background: linear-gradient(135deg, var(--color-bg-surface) 0%, #D3D1C7 100%);
 }
 
 .section-title-wrap {
@@ -409,12 +420,13 @@
 
 .day-cell {
   width: calc((100% - 6 * 8rpx) / 7);
-  aspect-ratio: 1;
+  /* 原来是 aspect-ratio: 1，加农历行后要容纳「日期 + 农历 + 分数」三行，改为固定最小高度 */
+  min-height: 100rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 6rpx 4rpx;
+  padding: 8rpx 4rpx;
   border-radius: 12rpx;
   box-sizing: border-box;
   font-size: 24rpx;
@@ -456,6 +468,23 @@
 .day-num {
   font-size: 24rpx;
   line-height: 1.2;
+}
+
+/* 农历/节气/节日短标签（历法信息，与吉凶无关） */
+.day-lunar {
+  font-size: 16rpx;
+  line-height: 1.25;
+  margin-top: 2rpx;
+  color: var(--color-text-tertiary);
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* 传统节日 / 节气：按历法惯例标红 */
+.day-lunar-hl {
+  color: var(--color-danger);
+  font-weight: 500;
 }
 
 .day-score {
@@ -511,7 +540,8 @@
   color: var(--color-text);
 }
 
-.detail-sub {
+/* 选中日的农历全称，如「八月十五 · 中秋节」 */
+.detail-lunar {
   font-size: 22rpx;
   color: var(--color-text-tertiary);
   margin-top: 4rpx;
@@ -676,4 +706,103 @@
 .evil-lock-btn-pro {
   background: #4A9D7E;
   color: #fff;
+}
+
+/* ===== 本月宜忌卡片 =====
+   借黄历的「宜/忌」视觉语言（朱红印章式双栏），但内容来自本人历史战绩统计。
+   合规说明见 utils/advice.ts 顶部——这里只呈现已发生的事实，不做预测。
+   位置：紧贴日历 + 图例下方（比月度统计更靠近用户视线中心）。 */
+.advice-card {
+  margin-top: 4rpx;
+}
+
+.advice-grid {
+  display: flex;
+  gap: 16rpx;
+  align-items: stretch;
+}
+
+.advice-col {
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--radius-lg);
+  padding: 20rpx 20rpx 24rpx;
+  position: relative;
+}
+
+.advice-col-good {
+  background: var(--color-danger-soft);
+}
+
+.advice-col-bad {
+  background: var(--color-bg-surface);
+}
+
+/* 印章式标签 */
+.advice-seal {
+  display: inline-block;
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 44rpx;
+  text-align: center;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 16rpx;
+}
+
+.advice-seal-good {
+  background: var(--color-danger);
+}
+
+.advice-seal-bad {
+  background: #444441;
+}
+
+.advice-item + .advice-item {
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid rgba(31, 30, 27, 0.06);
+}
+
+.advice-label {
+  font-size: 26rpx;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.advice-col-good .advice-label {
+  color: #501313;
+}
+
+.advice-col-bad .advice-label {
+  color: #2C2C2A;
+}
+
+.advice-detail {
+  font-size: 20rpx;
+  line-height: 1.5;
+  margin-top: 4rpx;
+  font-feature-settings: 'tnum';
+}
+
+.advice-col-good .advice-detail {
+  color: #993C1D;
+}
+
+.advice-col-bad .advice-detail {
+  color: #888780;
+}
+
+.advice-none {
+  font-size: 22rpx;
+  color: var(--color-text-tertiary);
+}
+
+.advice-disclaimer {
+  margin-top: 18rpx;
+  text-align: center;
+  font-size: 20rpx;
+  color: var(--color-text-quaternary);
 }

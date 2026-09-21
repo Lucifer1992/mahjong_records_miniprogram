@@ -1,5 +1,5 @@
 // app.ts
-import { bootSync } from './utils/sync';
+import { bootSync, autoSyncIfStale } from './utils/sync';
 import { getRecords } from './utils/storage';
 import { hasToken } from './utils/api';
 import { setTier } from './utils/tier';
@@ -58,6 +58,21 @@ App({
       await bootSync(records);
     } catch (e) {
       console.warn('[App] 启动同步失败（不影响本地使用）', e);
+    }
+  },
+
+  /**
+   * 每次回到前台：距上次成功同步超过 AUTO_SYNC_INTERVAL_MS（默认 5 分钟）就补一次
+   *
+   * 这是本项目「定时同步」唯一的实现方式，详见 sync.ts 的 autoSyncIfStale 注释：
+   * 小程序没有可靠的后台定时器，所以用前台事件 + 时间间隔来代替。
+   */
+  onShow() {
+    if (!hasToken()) return;
+    try {
+      autoSyncIfStale(getRecords());
+    } catch (e) {
+      console.warn('[App] 前台补同步失败（不影响本地使用）', e);
     }
   },
 

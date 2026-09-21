@@ -3,7 +3,7 @@
 
 Page({
   data: {
-    lastUpdated: '2026年9月12日',
+    lastUpdated: '2026年9月20日',
     version: 'v1.0.0'
   },
 

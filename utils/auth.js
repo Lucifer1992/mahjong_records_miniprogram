@@ -1,11 +1,11 @@
 /**
- * 登录抽屉调度（登录页方案已废弃，改为半屏抽屉）
+ * 登录抽屉调度（2026-09-20 改版：不再自动弹）
  *
- * 策略（对齐主流小程序）：
- * - 浏览不受限：未登录也正常加载本地数据
- * - 冷启动/切 tab：每个会话自动弹一次抽屉（用户关掉后不再自动弹）
- * - 功能操作：需要登录态的操作（如保存并同步本局）直接弹抽屉
+ * 策略：
+ * - **首次进入不再自动弹**：用户进来先看主界面，体验不被打断
+ * - 功能操作拦截：保存本局、立即同步、从云端拉取 → 弹抽屉
  * - 云接口 401：api.ts 自动在当前页弹抽屉兜底
+ * - 需要账号昵称/头像：登录成功后由抽屉自己再弹二级"完善资料"抽屉
  */
 import { hasToken } from './api';
 function showDrawer(page) {
@@ -13,21 +13,12 @@ function showDrawer(page) {
     if (drawer)
         drawer.show();
 }
-/** 用户本次会话内主动关过抽屉 → 不再自动弹（功能操作/401 仍会弹） */
-let dismissedThisSession = false;
-export function markPromptDismissed() {
-    dismissedThisSession = true;
-}
 /**
- * onShow 用：未登录且本会话还没被用户关过抽屉 → 弹抽屉。
- * 页面照常渲染本地数据（浏览不受限）。
+ * onShow 用：仅检测登录态，不再自动弹抽屉。
+ * 保留函数签名以便将来若要改回策略时不影响页面调用点。
  */
-export function promptLoginIfNeeded(page) {
-    if (hasToken())
-        return true;
-    if (!dismissedThisSession)
-        showDrawer(page);
-    return false;
+export function promptLoginIfNeeded(_page) {
+    return hasToken();
 }
 /** 功能操作用：未登录直接弹抽屉并返回 false（调用方 return 中断操作） */
 export function requireLogin(page) {

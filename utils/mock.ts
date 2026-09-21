@@ -89,7 +89,7 @@ function weightedRule(rng: Rng): RuleType {
   const r = rng();
   if (r < 0.55) return 'tuidaohu';
   if (r < 0.90) return 'xuezhan';
-  return 'qiaoma';
+  return 'wuhanhua';
 }
 
 /** 组一桌：固定 3~4 人，「我」永远排在第 0 位 */
@@ -283,7 +283,7 @@ export function generateMockData(seed = 20260913): { records: GameRecord[]; play
     const isWeekend = dow === 0 || dow === 5 || dow === 6;
 
     // 牌桌节奏：周末（五/六/日）多，工作日偶尔
-    // 最近两周再密一点 —— 演示时默认打开的就是当月，太稀撑不起牌运月历
+    // 最近两周再密一点 —— 演示时默认打开的就是当月，太稀撑不起牌局月历
     const base = isWeekend ? 0.48 : 0.13;
     const chance = back <= 14 ? Math.min(0.70, base + 0.18) : base;
     if (rng() > chance) continue;

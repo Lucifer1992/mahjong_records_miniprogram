@@ -1,13 +1,14 @@
 // pages/profile/profile.ts
 // 个人中心
 
-import { Player, Settings } from '../../utils/types';
+import type { GameRecord, Player, Settings } from '../../utils/types';
 import { promptLoginIfNeeded, requireLogin } from '../../utils/auth';
 import { getPlayers, getRecords, getSettings, updateSettings, exportAll, importAll, clearAll, getMe, renameMe } from '../../utils/storage';
-import { getSyncStatus, getPendingCount, syncFull, pullAndMerge, refreshTier } from '../../utils/sync';
-import { getTier, isPro, getFreeWindowDates, type Tier } from '../../utils/tier';
-import { API_BASE, updateNickname, fetchMe, hasToken } from '../../utils/api';
-import { formatDateTime } from '../../utils/date';
+import { getSyncStatus, getPendingCount, syncFull, pullAndMerge, refreshTier, type SyncStatus } from '../../utils/sync';
+import { calcSelfWinRate } from '../../utils/stats';
+import { getTier, isPro, setTier, getFreeWindowDates, type Tier } from '../../utils/tier';
+import { API_BASE, updateNickname, fetchMe, hasToken, createPrepay, getOrder, clearToken } from '../../utils/api';
+import { formatDate, formatDateTime } from '../../utils/date';
 import { isDevEnv, loadMockData, hasSnapshot, restoreSnapshot } from '../../utils/mock';
 
 /** 导出备份文件的命名前缀（同时用于识别并清理旧备份） */
@@ -29,8 +30,22 @@ interface MenuItem {
  * 「云端同步」这一组的描述必须随等级变化——免费用户点同步前就该知道
  * "云端只留最近几天"，而不是同步完才发现历史被淘汰了。
  */
-function buildMenuSections(tier: Tier, windowDates: number, myNickname: string): { title: string; items: MenuItem[] }[] {
+function buildMenuSections(tier: Tier, windowDates: number, isLoggedIn: boolean): { title: string; items: MenuItem[] }[] {
   const pro = tier === 'pro';
+
+  const accountSection = isLoggedIn
+    ? {
+        title: '账号',
+        items: [
+          { id: 'logout', icon: '🚪', iconType: 'warning' as const, title: '退出登录', desc: '清空本地 token，下次操作需重新登录', action: 'tap' as const }
+        ]
+      }
+    : {
+        title: '账号',
+        items: [
+          { id: 'login', icon: '🔑', iconType: 'cloud' as const, title: '登录账号', desc: '登录后可云端同步战绩、换机恢复', action: 'tap' as const }
+        ]
+      };
 
   return ([
     {
@@ -64,7 +79,6 @@ function buildMenuSections(tier: Tier, windowDates: number, myNickname: string):
     {
       title: '偏好设置',
       items: [
-        { id: 'nickname', icon: '✏️', iconType: 'info' as const, title: '我的昵称', desc: myNickname, action: 'tap' as const },
         { id: 'sound', icon: '🔊', iconType: 'bell' as const, title: '操作音效', desc: '保存战绩时震动反馈', action: 'switch' as const, value: true }
       ]
     },
@@ -83,10 +97,41 @@ function buildMenuSections(tier: Tier, windowDates: number, myNickname: string):
         { id: 'mockData', icon: '🧪', iconType: 'info' as const, title: '生成演示数据', desc: '铺一批历史战绩用于演示（仅本地）', action: 'tap' as const },
         { id: 'mockRestore', icon: '↩️', iconType: 'warning' as const, title: '恢复生成前数据', desc: '回滚到生成演示数据之前的状态', action: 'tap' as const }
       ]
-    }
+    },
+    accountSection
   ] as { title: string; items: MenuItem[] }[]).filter(s => s.title !== '开发者选项' || isDevEnv());
 }
 
+/**
+ * 免费用户「立即同步」的弹窗文案
+ *
+ * 以前只写「本地 N 条战绩推送到云端」，完全没说清云端到底留多少，
+ * 用户看到 3 条就会以为是「近 3 天」还是「近 3 条」的歧义。
+ * 现在按**日期维度**把账算清楚：哪几个日期会被保留、多少条会被云端淘汰。
+ *
+ * 口径与后端 trimFreeWindow 一致：按「有数据的日期」去重，倒序取前 N 个日期保留。
+ */
+function buildFreeSyncCopy(records: GameRecord[], allDates: string[], windowDates: number): string {
+  // 日期倒序取前 N 个 = 云端实际会保留的日期
+  const keepDates = new Set([...allDates].sort().reverse().slice(0, windowDates));
+  const kept = records.filter(r => keepDates.has(formatDate(r.playedAt))).length;
+  const dropped = records.length - kept;
+
+  const head = `将把本地 ${records.length} 条战绩（分布在 ${allDates.length} 个日期）推送到云端。`;
+  const dupe = '云端按战绩 ID 去重，重复点同步不会产生脏数据。';
+
+  return dropped > 0
+    ? `${head}\n\n免费版云端只保留最近 ${windowDates} 个有数据的日期：本次推送后云端实际保留约 ${kept} 条，` +
+      `另有 ${dropped} 条更早的战绩在云端不保留（本地数据不受影响，升级 Pro 后可重新上传）。\n\n${dupe}`
+    : `${head}\n\n都在最近 ${windowDates} 个有数据的日期范围内，云端会全部保留。\n\n${dupe}`;
+}
+
+/**
+ * 立即同步 —— 全量推送本地战绩到云端
+ *
+ * 免费用户推完，后端会按「最近 N 个有数据的日期」修剪云端，并回传淘汰条数。
+ * 我们在弹窗里把这件事说清楚，而不是偷偷删。
+ */
 Page({
   data: {
     totalGames: 0,
@@ -97,9 +142,10 @@ Page({
     settings: null as Settings | null,
     version: '1.0.0',
     buildTime: '2026-09-11',
+    isLoggedIn: hasToken(),   // 顶栏文案 / 退出登录菜单 按登录态切换
     accountName: '',    // 云端账户昵称（登录后显示）
     accountAvatar: '',  // 云端头像完整 URL（空 = 显示默认 🀄）
-    syncStatus: 'idle' as 'idle' | 'syncing' | 'error',
+    syncStatus: 'idle' as SyncStatus,
     apiBase: API_BASE,
 
     // 等级分层
@@ -107,7 +153,7 @@ Page({
     isPro: false,
     cloudWindowDates: 3,
 
-    menuSections: buildMenuSections('free', 3, '我'),
+    menuSections: buildMenuSections('free', 3, false),
 
     // 工具
     formatDateTime
@@ -120,6 +166,8 @@ Page({
 
   onShow() {
     promptLoginIfNeeded(this);
+    // 同步登录态：用户在其他地方点了退出后回到 profile 页要立刻反映
+    this.setData({ isLoggedIn: hasToken() });
     this.loadData();
     this.refreshSyncStatus();
     this.refreshTierAsync();
@@ -128,6 +176,7 @@ Page({
 
   /** 登录抽屉登录成功回调：刷新登录态相关展示 */
   onLoggedIn() {
+    this.setData({ isLoggedIn: true });
     this.loadData();
     this.refreshSyncStatus();
     this.refreshTierAsync();
@@ -170,8 +219,9 @@ Page({
     this.setData({
       tier,
       isPro: tier === 'pro',
+      isLoggedIn: hasToken(),
       cloudWindowDates: windowDates,
-      menuSections: buildMenuSections(tier, windowDates, getMe()?.nickname || '我')
+      menuSections: buildMenuSections(tier, windowDates, hasToken())
     });
   },
 
@@ -180,13 +230,10 @@ Page({
     const players = getPlayers();
     const settings = getSettings();
 
-    // 胜率（按「我」= 每条战绩的第一位玩家）
-    // 之前用"当场最高分"判定，等于"有人赢就算我赢"，永远 100%
-    let winRate = 0;
-    if (records.length > 0) {
-      const wins = records.filter(r => (r.players[0] ? r.players[0].score : 0) > 0).length;
-      winRate = Math.round((wins / records.length) * 100);
-    }
+    // 胜率判定统一走 calcSelfWinRate → selfIn()（按 playerId 认「我」）
+    // 之前：① 用"当场最高分"判定 → 有人赢就算我赢，永远 100%
+    //       ② 后来改成 players[0]，但我未必排第一（顺序取决于点牌友先后）→ 照样算成别人的
+    const winRate = Math.round(calcSelfWinRate(records) * 100);
 
     // 等级（每 10 场 +1，最高 99）
     const userLevel = Math.min(99, Math.floor(records.length / 10) + 1);
@@ -387,7 +434,7 @@ Page({
       title: '生成演示数据',
       content: existing > 0
         ? `当前已有 ${existing} 条战绩，生成演示数据会覆盖它们。\n\n生成前会自动存一份快照，可以用「恢复生成前数据」回滚。\n\n确定继续吗？`
-        : '将生成约 5 个月的历史战绩 + 8 位玩家档案，用于演示「福星克星」和「牌运月历」。\n\n确定继续吗？',
+        : '将生成约 5 个月的历史战绩 + 8 位玩家档案，用于演示「福星克星」和「牌局月历」。\n\n确定继续吗？',
       confirmText: '生成',
       success: (res) => {
         if (!res.confirm) return;
@@ -456,9 +503,10 @@ Page({
 
     const pro = isPro();
     const windowDates = getFreeWindowDates();
+    const allDates = Array.from(new Set(records.map(r => formatDate(r.playedAt))));
     const content = pro
-      ? `将把本地 ${records.length} 条战绩全量推送到云端，永久保存。`
-      : `将把本地 ${records.length} 条战绩推送到云端。\n\n免费版云端只保留最近 ${windowDates} 个有数据的日期，更早的会被云端淘汰（本地数据不受影响，升级后可重新上传）。`;
+      ? `将把本地 ${records.length} 条战绩（分布在 ${allDates.length} 个日期）全量推送到云端，永久保存。\n\n云端按战绩 ID 去重，重复点同步不会产生脏数据。`
+      : buildFreeSyncCopy(records, allDates, windowDates);
 
     wx.showModal({
       title: '立即同步',
@@ -545,13 +593,51 @@ Page({
   },
 
   /**
-   * 升级 Pro
-   *
-   * 兑换码通道已下线（2026-09-19）：变现统一走微信虚拟支付。
-   * P0 会把这里改成跳转 Pro 升级页（wx.requestVirtualPayment），
-   * 上线前先提示"即将上线"占位。
+   * 顶栏点击：未登录时触发登录抽屉；已登录时弹出昵称编辑弹窗
+   * （复用 onEditNickname：本地改名 + 云端尽力同步）
    */
-  onUpgrade() {
+  onUserHeroTap() {
+    if (!hasToken()) {
+      this.promptLoginDrawer();
+      return;
+    }
+    this.onEditNickname();
+  },
+
+  /** 拉起登录抽屉（用于"账号"菜单 / 顶栏"登录"提示） */
+  promptLoginDrawer() {
+    (this as any).selectComponent?.('#loginDrawer')?.show?.();
+  },
+
+  /**
+   * 退出登录：清掉本地 token + tier 缓存，但不删本地战绩。
+   * 云端数据保留（用户重新登录可恢复）。
+   */
+  onLogout() {
+    wx.showModal({
+      title: '退出登录',
+      content: '退出后将清空本地登录态。\n\n· 本地战绩不受影响，仍可记录\n· 下次操作需重新登录\n· 云端战绩保留，重新登录后可继续同步',
+      confirmText: '退出',
+      cancelText: '取消',
+      confirmColor: '#A32D2D',
+      success: (r) => {
+        if (!r.confirm) return;
+        clearToken();
+        setTier('free');
+        this.setData({ isLoggedIn: false });
+        this.applyTier();
+        this.refreshAccountAsync();
+        wx.showToast({ title: '已退出', icon: 'success', duration: 1200 });
+      }
+    });
+  },
+
+  /**
+   * 升级 Pro：弹确认 → 调 /prepay 拿双签名 → wx.requestVirtualPayment
+   * → 轮询 /order/:outTradeNo 等 status='paid'（推送是异步的，1-3 秒）
+   * → 升级成功刷新 tier
+   */
+  async onUpgrade() {
     if (isPro()) {
       wx.showModal({
         title: 'Pro 权益',
@@ -562,7 +648,122 @@ Page({
       return;
     }
 
-    wx.showToast({ title: 'Pro 支付即将上线', icon: 'none' });
+    if (!requireLogin(this)) return;
+
+    const confirm = await new Promise<boolean>(resolve => {
+      wx.showModal({
+        title: '升级 Pro 终身版',
+        content: '¥9.9 一次性付费，永久享\n\n· 云端永久保存全部战绩\n· 换机后完整恢复历史\n· 克星榜看全量\n\n付款由微信虚拟支付保障，本工具仅供娱乐记录。',
+        confirmText: '¥9.9 升级',
+        cancelText: '暂不',
+        success: (r) => resolve(r.confirm)
+      });
+    });
+    if (!confirm) return;
+
+    let params;
+    try {
+      params = await createPrepay('lifetime');
+    } catch (e: any) {
+      console.warn('[upgrade] prepay failed', e);
+      const code = e?.code || '';
+      const msg = e?.message || '';
+      // 网络不通和服务端报错要说清楚：前者换网络能救，后者只能重试
+      if (code === 'NETWORK_ERROR' || msg.includes('request:fail') || msg.includes('timeout')) {
+        wx.showModal({
+          title: '连不上服务器',
+          content: `请求超时或被中断，可以换个网络再试（4G ↔ Wi-Fi）。\n\n${msg}`,
+          showCancel: false,
+          confirmText: '知道了'
+        });
+        return;
+      }
+      if (msg.includes('SESSION_KEY_MISSING') || msg.includes('登录')) {
+        wx.showToast({ title: '请重新登录后支付', icon: 'none' });
+      } else {
+        wx.showToast({ title: '创建订单失败，请稍后重试', icon: 'none' });
+      }
+      return;
+    }
+
+    // 唤起微信虚拟支付（双签名 + 道具 ID + 价格已由后端返回）
+    const payRes = await new Promise<{ ok: boolean; err?: string }>(resolve => {
+      // 参数对齐虚拟支付官方签名约定
+      (wx as any).requestVirtualPayment({
+        ...params,
+        mode: 'short_series_goods',
+        success: () => resolve({ ok: true }),
+        fail: (err: any) => resolve({ ok: false, err: err?.errMsg || '支付失败' })
+      });
+    });
+
+    if (!payRes.ok) {
+      // 用户取消 / 系统错误：不弹错误，按钮可点重试
+      console.warn('[upgrade] wx.requestVirtualPayment failed', payRes.err);
+      return;
+    }
+
+    // 支付客户端成功 ≠ 履约完成，需要轮询等推送发货
+    this.pollOrderUntilPaid(params.outTradeNo);
+  },
+
+  /**
+   * 订单轮询：每 ~1.2s 查一次 /order/:outTradeNo，命中 status='paid' 即升级成功
+   *
+   * ⚠️ 必须按「墙钟时间」收口，不能只数轮数：
+   * 网络不通时每一次 getOrder 会挂满 api.ts 的 15s timeout，
+   * 原来的 30 轮 × 15s = 最长 7 分半被 loading 遮罩卡住，用户会以为点了个假按钮。
+   */
+  async pollOrderUntilPaid(outTradeNo: string) {
+    const DEADLINE_MS = 20000;   // 整体上限（回调推送正常 1-3 秒，20 秒足够兜底）
+    const INTERVAL_MS = 1200;    // 轮询间隔
+    const CALL_CAP_MS = 3000;    // 单次查单上限，超时就丢掉这一轮再试
+
+    const started = Date.now();
+    let paid = false;
+    wx.showLoading({ title: '等待支付确认…', mask: true });
+
+    try {
+      while (Date.now() - started < DEADLINE_MS) {
+        await new Promise(r => setTimeout(r, INTERVAL_MS));
+        try {
+          const order = await this.getOrderCapped(outTradeNo, CALL_CAP_MS);
+          if (order.status === 'paid') {
+            paid = true;
+            break;
+          }
+        } catch {
+          // 单次失败不中断轮询
+        }
+      }
+    } finally {
+      wx.hideLoading();
+    }
+
+    if (paid) {
+      setTier('pro');
+      this.applyTier();
+      this.refreshTierAsync();
+      wx.showToast({ title: '升级成功 🎉', icon: 'success', duration: 1500 });
+      return;
+    }
+
+    wx.showModal({
+      title: '支付确认中',
+      content: `订单 ${outTradeNo} 暂未到账，可能是支付回调延迟。\n如已扣款，刷新本页或稍后回来即可。`,
+      showCancel: false,
+      confirmText: '知道了'
+    });
+  },
+
+  /** 单次查单 + 硬性时间上限（被 race 丢弃的请求仍会在后台跑，但不再拖住轮询） */
+  getOrderCapped(outTradeNo: string, capMs: number): Promise<{ status: 'created' | 'paid' }> {
+    return Promise.race([
+      getOrder(outTradeNo),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('ORDER_QUERY_TIMEOUT')), capMs)
+      )
+    ]);
   },
 
   // ========== 我的昵称 ==========
@@ -575,7 +776,9 @@ Page({
     const current = getMe()?.nickname || '';
     wx.showModal({
       title: '修改昵称',
-      content: current ? `当前：${current}` : '给自己起个牌桌昵称（10 字以内）',
+      // ⚠️ editable 模式下 content 是「输入框的初始值」，不是提示文字。
+      //    所以只能放纯昵称——加"当前："这类前缀会被当成昵称一起存进去。
+      content: current,
       editable: true,
       placeholderText: current || '如：铁匠',
       confirmText: '保存',
@@ -608,6 +811,12 @@ Page({
     const id = e.currentTarget.dataset.id as string;
 
     switch (id) {
+      case 'login':
+        this.promptLoginDrawer();
+        break;
+      case 'logout':
+        this.onLogout();
+        break;
       // ⚠️ 这两个之前是"死按钮"：菜单里有，switch 里没有对应 case，
       //    点了完全没反应。补上。
       case 'sync':
@@ -634,7 +843,7 @@ Page({
       case 'about':
         wx.showModal({
           title: '雀战录 v1.0.0',
-          content: '麻将战绩记录 + 数据分析工具\n\n主打功能：\n·• 福星克星分析\n·• 牌运月历\n·• 战绩分享卡\n\n📅 2026-09-11',
+          content: '麻将战绩记录 + 数据分析工具\n\n主打功能：\n·• 福星克星分析\n·• 牌局月历\n·• 战绩分享卡\n\n📅 2026-09-11',
           showCancel: false,
           confirmText: '好的'
         });

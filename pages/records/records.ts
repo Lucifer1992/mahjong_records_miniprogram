@@ -3,7 +3,7 @@
 
 import { GameRecord, Player } from '../../utils/types';
 import { promptLoginIfNeeded } from '../../utils/auth';
-import { getRecords, getPlayers, deleteRecord } from '../../utils/storage';
+import { getRecords, getPlayers, deleteRecord, selfScoreIn } from '../../utils/storage';
 import { RULE_LABELS, DURATION_LABELS, MOOD_EMOJI } from '../../utils/types';
 import { ruleColor } from '../../utils/constants';
 import { adEnabled, adUnitId } from '../../utils/ads';
@@ -65,12 +65,21 @@ Page({
     filteredRecords: [] as RecordItem[],
     hasRecords: false,
 
+    // 牌友过滤（首页"查看该牌友历史"入口携带 ?nickname=老张）
+    nicknameFilter: '' as string,
+
     // 工具
     formatDateTime,
     relativeTime
   },
 
-  onLoad() {
+  onLoad(options?: { nickname?: string }) {
+    // 接受 query 参数 ?nickname=老张 —— 从首页/记分页的"查看该牌友历史"入口进来
+    // 解码后写入 data.nicknameFilter，applyFilter 会按它二次过滤
+    const nickname = decodeURIComponent(options?.nickname || '').trim();
+    if (nickname) {
+      this.setData({ nicknameFilter: nickname });
+    }
     this.loadData();
   },
 
@@ -109,8 +118,11 @@ Page({
         medal: medals[idx] || ''
       }));
       const winner = sorted[0];
+      // 卡片左侧色条代表「我这局的结果」，按「我」的分数判定。
+      // 以前按全场最高分判 —— 记分零和、最高分恒为正，色条永远是"赢"，看着就像全胜
+      const my = selfScoreIn(r);
       const bestResult: 'win' | 'lose' | 'even' =
-        winner.score > 0 ? 'win' : (winner.score < 0 ? 'lose' : 'even');
+        my === null ? 'even' : (my > 0 ? 'win' : (my < 0 ? 'lose' : 'even'));
 
       return {
         id: r.id,
@@ -176,11 +188,25 @@ Page({
   },
 
   applyFilter() {
-    const filter = this.data.selectedRuleFilter;
-    const filtered = filter === 'all'
+    const ruleFilter = this.data.selectedRuleFilter;
+    const nickname = this.data.nicknameFilter;
+
+    let filtered = ruleFilter === 'all'
       ? this.data.records
-      : filterRecordsByRule(this.data.records, filter);
+      : filterRecordsByRule(this.data.records, ruleFilter);
+
+    // 牌友过滤：只保留该 nickname 出现在 players[] 中的战绩
+    if (nickname) {
+      filtered = filtered.filter(r => r.players.some(p => p.nickname === nickname));
+    }
+
     this.setData({ filteredRecords: filtered });
+  },
+
+  /** 清除 nickname 过滤（用户在过滤条点 × 退出牌友专属视图） */
+  onClearNicknameFilter() {
+    this.setData({ nicknameFilter: '' });
+    this.applyFilter();
   },
 
   onRecordTap(e: WechatMiniprogram.TapEvent) {

@@ -52,7 +52,7 @@
     "disableSWC": true
   },
   "compileType": "miniprogram",
-  "libVersion": "3.4.0",
+  "libVersion": "2.32.0",
   "appid": "wxd170492ee92e1a80",
   "projectname": "mahjong-record",
   "condition": {},

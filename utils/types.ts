@@ -2,19 +2,19 @@
 
 /**
  * 玩法类型（预设）
- * xuezhan:   血战到底（川麻主流）
- * xueliu:    血流成河（川麻）
- * tuidaohu:  推倒胡（广东主流）
- * qiaoma:    上海敲麻
- * hongzhong: 红中麻将（鄂/豫主流，红中赖子/红中血流）
- * zhuaji:    捉鸡麻将（贵州主流）
- * guobiao:   国标麻将
- * riichi:    日本麻将（立直）
- * custom:    自定义玩法（ruleName 存用户输入的名字）
+ * 对齐腾讯欢乐麻将全集的主流玩法：
+ * - xuezhan:    血战到底（川麻主流）
+ * - xueliu:     血流成河（川麻，胡牌继续打）
+ * - tuidaohu:   广东推倒胡
+ * - guobiao:    国标麻将
+ * - erren:      二人雀神（2 人对战）
+ * - wuhanhua:   武汉花麻将（无番）
+ * - changsha:   长沙麻将
+ * - custom:     自定义玩法（ruleName 存用户输入的名字）
  */
 export type RuleType =
-  | 'xuezhan' | 'xueliu' | 'tuidaohu' | 'qiaoma'
-  | 'hongzhong' | 'zhuaji' | 'guobiao' | 'riichi'
+  | 'xuezhan' | 'xueliu' | 'tuidaohu' | 'guobiao'
+  | 'erren' | 'wuhanhua' | 'changsha'
   | 'custom';
 
 /**
@@ -94,7 +94,7 @@ export interface PartnerStat {
 }
 
 /**
- * 牌运月历单日数据
+ * 牌局月历单日数据
  */
 export interface CalendarDay {
   date: string;          // YYYY-MM-DD
@@ -113,6 +113,17 @@ export interface Settings {
   soundEnabled: boolean;
   /** 「我」绑定的玩家档案 ID（昵称修改 / 首页快捷加我 都基于它） */
   myPlayerId?: string;
+  /**
+   * 上一次记分用的玩法（首页 onLoad 优先用这个作默认选中）
+   * - 新用户没有 → 沿用 defaultRuleType（兼容老用户）
+   * - 用户每次保存战绩后会更新
+   */
+  lastRuleType?: RuleType;
+  /**
+   * 上一次记分用的时段（afternoon / evening / overnight）
+   * - 新用户没有 → 按本机时间自动判断
+   */
+  lastDuration?: 'afternoon' | 'evening' | 'overnight';
 }
 
 /**
@@ -131,11 +142,10 @@ export const RULE_LABELS: Record<RuleType, string> = {
   xuezhan: '血战到底',
   xueliu: '血流成河',
   tuidaohu: '广东推倒胡',
-  qiaoma: '上海敲麻',
-  hongzhong: '红中麻将',
-  zhuaji: '捉鸡麻将',
   guobiao: '国标麻将',
-  riichi: '日本麻将',
+  erren: '二人雀神',
+  wuhanhua: '武汉花麻将',
+  changsha: '长沙麻将',
   custom: '自定义玩法'
 };
 

@@ -79,11 +79,27 @@
   min-width: 0;
 }
 
+.user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 6rpx;
+}
+
 .user-name {
   font-size: 32rpx;
   font-weight: 600;
   letter-spacing: -0.5rpx;
-  margin-bottom: 6rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 昵称可点击编辑的视觉提示 */
+.user-name-edit {
+  font-size: 22rpx;
+  opacity: 0.7;
+  flex-shrink: 0;
 }
 
 .user-meta {
@@ -106,6 +122,21 @@
 .user-level {
   font-size: 26rpx;
   font-weight: 600;
+}
+
+.user-action-text {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* 顶栏点击区域：未登录时整块可点击触发登录 */
+.user-hero-content {
+  cursor: pointer;
+}
+
+.user-hero-content:active {
+  opacity: 0.85;
 }
 
 /* ===== 核心统计 ===== */
@@ -179,6 +210,11 @@
   background: var(--color-primary);
   box-shadow: 0 0 0 6rpx rgba(74, 157, 126, 0.15);
   animation: pulse 1.5s ease-in-out infinite;
+}
+
+.sync-dot.sync-pending {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 6rpx rgba(186, 117, 23, 0.15);
 }
 
 .sync-dot.sync-error {

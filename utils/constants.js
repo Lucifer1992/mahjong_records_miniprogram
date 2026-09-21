@@ -1,16 +1,15 @@
 // utils/constants.ts - 常量
 /**
- * 预设玩法（按用户覆盖面挑选：川/粤/沪/鄂豫/黔 + 国标/日麻）
+ * 预设玩法（按腾讯欢乐麻将全集主流：川/粤/国标/二人/鄂/湘）
  */
 export const SUPPORTED_RULES = [
     { id: 'xuezhan', name: '血战到底', desc: '川麻主流，一家胡牌不结束' },
     { id: 'xueliu', name: '血流成河', desc: '川麻，胡牌后继续打' },
     { id: 'tuidaohu', name: '广东推倒胡', desc: '广东主流，可吃可碰' },
-    { id: 'qiaoma', name: '上海敲麻', desc: '上海地区流行玩法' },
-    { id: 'hongzhong', name: '红中麻将', desc: '鄂/豫主流，红中赖子' },
-    { id: 'zhuaji', name: '捉鸡麻将', desc: '贵州主流，捉鸡算分' },
-    { id: 'guobiao', name: '国标麻将', desc: '官方竞赛规则 81 番' },
-    { id: 'riichi', name: '日本麻将', desc: '立直麻将，番数计分' }
+    { id: 'guobiao', name: '国标麻将', desc: '官方竞赛 81 番' },
+    { id: 'erren', name: '二人雀神', desc: '2 人对战（仅 2 名玩家）' },
+    { id: 'wuhanhua', name: '武汉花麻将', desc: '武汉地区，无番型' },
+    { id: 'changsha', name: '长沙麻将', desc: '湖南长沙地区' }
 ];
 /** 玩法选择器末尾的"自定义"入口（选中后弹输入框，ruleType 存 'custom'） */
 export const CUSTOM_RULE_ENTRY = {
@@ -27,11 +26,10 @@ export const RULE_COLORS = {
     xuezhan: '#4A9D7E',
     xueliu: '#0F6E56',
     tuidaohu: '#D4537E',
-    qiaoma: '#378ADD',
-    hongzhong: '#A32D2D',
-    zhuaji: '#639922',
     guobiao: '#BA7517',
-    riichi: '#993556'
+    erren: '#378ADD',
+    wuhanhua: '#A32D2D',
+    changsha: '#993556'
 };
 /** custom 玩法取色池 */
 const RULE_COLOR_PALETTE = ['#4A9D7E', '#378ADD', '#D4537E', '#BA7517', '#1D9E75', '#993556', '#639922', '#D85A30'];

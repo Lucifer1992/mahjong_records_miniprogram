@@ -1,7 +1,8 @@
-// utils/calendar.ts - 牌运月历数据组装
+// utils/calendar.ts - 牌局月历数据组装
 
 import { GameRecord, CalendarDay } from './types';
 import { formatDate, getDaysInMonth, getFirstDayOfMonth } from './date';
+import { getDayLabel } from './lunar';
 
 export interface CalendarData {
   year: number;
@@ -20,12 +21,16 @@ export interface CalendarCell {
   day: number | null;     // null 表示空白填充
   date: string | null;
   data: CalendarDay | null;
+  /** 农历短标签：节日 > 节气 > 农历日/月名（空白格为 null） */
+  lunarLabel: string | null;
+  /** 是否传统节日/节气（用于红色高亮） */
+  lunarHighlight: boolean;
 }
 
 /**
  * 构建某年某月的日历数据
  *
- * @param selfPlayerId 「我」的玩家 ID。传入则按个人视角统计（月历是「我的牌运」，应该这样算）；
+ * @param selfPlayerId 「我」的玩家 ID。传入则按个人视角统计（月历是「我的战绩」，应该这样算）；
  *                     不传则退回全场总分视角 —— 注意记分是零和的，那样每天的净胜分恒为 0
  */
 export function buildCalendar(
@@ -62,7 +67,7 @@ export function buildCalendar(
       dayMap.set(dateKey, cell);
     }
     cell.gamesPlayed += 1;
-    // 个人视角：只累加「我」的分数（月历是"我的牌运"）
+    // 个人视角：只累加「我」的分数（月历是"我的战绩"）
     // 不传 selfPlayerId 时退回全场总分 —— 但记分零和，那样净胜分恒为 0
     if (selfPlayerId) {
       const mine = record.players.find(p => p.playerId === selfPlayerId);
@@ -82,17 +87,25 @@ export function buildCalendar(
   // 填充日历单元格
   // 前导空白
   for (let i = 0; i < firstDay; i++) {
-    cells.push({ day: null, date: null, data: null });
+    cells.push({ day: null, date: null, data: null, lunarLabel: null, lunarHighlight: false });
   }
   // 当月日期
   for (let d = 1; d <= daysInMonth; d++) {
     const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const cell = dayMap.get(dateKey) || null;
-    cells.push({ day: d, date: dateKey, data: cell });
+    // 农历信息（客观历法数据，与吉凶无关——见 utils/lunar.ts 顶部合规说明）
+    const lunar = getDayLabel(new Date(year, month - 1, d));
+    cells.push({
+      day: d,
+      date: dateKey,
+      data: cell,
+      lunarLabel: lunar.label,
+      lunarHighlight: lunar.highlight
+    });
   }
   // 尾部空白，补齐到 42 个（6 行 × 7 列）
   while (cells.length < 42) {
-    cells.push({ day: null, date: null, data: null });
+    cells.push({ day: null, date: null, data: null, lunarLabel: null, lunarHighlight: false });
   }
 
   // 统计

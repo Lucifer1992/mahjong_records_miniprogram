@@ -48,6 +48,22 @@
       </view>
     </picker>
 
+    <!-- 自定义玩法：占满下一行的灰色 placeholder 输入框，点击即编辑 -->
+    <view wx:if="{{ selectedRule.id === 'custom' }}" class="custom-rule-input-wrap">
+      <input id="customRuleInput"
+             class="custom-rule-input"
+             type="text"
+             maxlength="{{ customRuleNameMax }}"
+             placeholder="如「办公室麻将」「四人血战」"
+             placeholder-class="custom-rule-placeholder"
+             value="{{ customRuleDraft }}"
+             bindinput="onCustomRuleInput"
+             confirm-hold="{{ false }}" />
+      <view wx:if="{{ customRuleDraft.length === 0 }}" class="custom-rule-hint">
+        点击输入你的玩法名称（{{ customRuleNameMax }} 字以内）
+      </view>
+    </view>
+
     <view class="form-divider"></view>
 
     <view class="form-row">
@@ -75,12 +91,16 @@
 
     <view wx:if="{{ players.length > 0 }}" class="player-chips">
       <view wx:for="{{ players }}" wx:key="playerId"
-            class="player-chip">
+            class="player-chip"
+            data-index="{{ index }}"
+            bindtap="onTapPlayer"
+            hover-class="player-chip-hover"
+            hover-stay-time="60">
         <view class="player-chip-avatar avatar-grad-{{ item.avatarIdx || 1 }}">
           {{ item.nickname[0] }}
         </view>
         <text class="player-chip-name">{{ item.nickname }}</text>
-        <view class="chip-remove" data-index="{{ index }}" bindtap="onRemovePlayer">
+        <view class="chip-remove" data-index="{{ index }}" catchtap="onRemovePlayer">
           <text>×</text>
         </view>
       </view>
@@ -92,6 +112,10 @@
     </view>
 
     <view class="add-player-row">
+      <view class="recent-btn" bindtap="onShowRecentPlayers">
+        <text class="recent-btn-icon">📋</text>
+        <text class="recent-btn-text">历史牌友</text>
+      </view>
       <input class="add-player-input"
              placeholder="输入牌友昵称"
              placeholder-class="input-placeholder"
@@ -211,5 +235,63 @@
     </view>
   </view>
 </view>
+<!-- 历史牌友抽屉（多选：勾多位 → 底部「加入本局」一次性加入；顶部常用阵容一键勾选） -->
+<view class="recent-mask {{ showRecentPlayers ? 'is-visible' : '' }}"
+      bindtap="onCloseRecentPlayers"
+      wx:if="{{ showRecentPlayers }}">
+  <view class="recent-panel" catchtap="">
+    <view class="recent-close" bindtap="onCloseRecentPlayers">✕</view>
+    <view class="recent-title">历史牌友</view>
+    <view class="recent-sub">可勾选多位一起加入 · 长按可删除档案</view>
+
+    <!-- 常用阵容（按最近 10 场自动统计，点一次勾上、再点一次取消） -->
+    <scroll-view scroll-x class="recent-combo-scroll" wx:if="{{ recentLineups.length > 0 }}">
+      <view class="recent-combo-list">
+        <view wx:for="{{ recentLineups }}" wx:key="id"
+              class="recent-combo"
+              data-index="{{ index }}"
+              bindtap="onApplyLineup"
+              hover-class="recent-combo-hover">
+          <view class="recent-combo-label">{{ item.label }}</view>
+          <view class="recent-combo-text">{{ item.text }}</view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <scroll-view scroll-y class="recent-scroll">
+      <view wx:for="{{ recentPlayers }}" wx:key="id"
+            class="recent-row {{ item.inGame ? 'recent-row-ingame' : '' }}"
+            data-index="{{ index }}"
+            bindtap="onToggleRecentPlayer"
+            bindlongpress="onLongPressRecentPlayer"
+            hover-class="recent-row-hover">
+        <view class="recent-avatar avatar-grad-{{ (index % 8) + 1 }}">
+          {{ item.nickname[0] }}
+        </view>
+        <view class="recent-info">
+          <view class="recent-name">{{ item.nickname }}</view>
+          <view class="recent-meta">
+            <text wx:if="{{ item.usage > 0 }}">打过 {{ item.usage }} 局</text>
+            <text wx:else>未参战（仅档案）</text>
+          </view>
+        </view>
+        <view wx:if="{{ item.inGame }}" class="recent-tag">已在局</view>
+        <view wx:else class="recent-check {{ item.checked ? 'is-checked' : '' }}">
+          <text wx:if="{{ item.checked }}" class="recent-check-icon">✓</text>
+        </view>
+      </view>
+      <view wx:if="{{ recentPlayers.length === 0 }}" class="recent-empty">
+        暂无历史牌友
+      </view>
+    </scroll-view>
+
+    <view class="recent-confirm {{ recentCheckedCount > 0 ? '' : 'is-disabled' }}"
+          bindtap="onConfirmAddRecent">
+      <text wx:if="{{ recentCheckedCount > 0 }}">加入本局（{{ recentCheckedCount }}）</text>
+      <text wx:else>勾选牌友后加入</text>
+    </view>
+  </view>
+</view>
+
 <!-- 登录抽屉（未登录时由 utils/auth 弹出；登录成功回调刷新页面数据） -->
 <login-drawer id="loginDrawer" bind:loggedin="onLoggedIn" />

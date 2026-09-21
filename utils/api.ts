@@ -199,6 +199,43 @@ export function updateProfile(patch: { nickname?: string; avatar?: string }) {
 }
 
 /**
+ * 创建 Pro 升级预付订单（双签名 + 道具 ID + 价格 + outTradeNo）
+ * 前端拿到后直接调 wx.requestVirtualPayment
+ */
+export function createPrepay(product: 'lifetime') {
+  return request<{
+    signData: string;
+    paySig: string;
+    signature: string;
+    outTradeNo: string;
+    priceFen: number;
+    label: string;
+  }>({
+    url: '/api/vpay/prepay',
+    method: 'POST',
+    data: { product },
+    showError: false
+  });
+}
+
+/** 查询订单状态（轮询等履约） */
+export function getOrder(outTradeNo: string) {
+  return request<{
+    id: string;
+    out_trade_no: string;
+    product_id: string;
+    price_fen: number;
+    status: 'created' | 'paid';
+    paid_at: number | null;
+    created_at: number;
+  }>({
+    url: `/api/vpay/order/${outTradeNo}`,
+    silent: true,
+    showError: false
+  });
+}
+
+/**
  * 批量同步
  * 响应里带 tier / trimmed —— 后端会顺手按用户等级修剪云端窗口，
  * 并把这次淘汰了多少条回传，前端据此给用户提示

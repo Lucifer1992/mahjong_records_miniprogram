@@ -1,6 +1,7 @@
 // utils/stats.ts - 战绩统计工具
 
 import { GameRecord, Player } from './types';
+import { selfScoreIn } from './storage';
 import { formatDate, formatDateShort, isInMonth } from './date';
 
 export interface OverallStats {
@@ -25,12 +26,25 @@ export interface RuleStat {
 /**
  * 取「我」在某局的分数
  *
- * 约定：一局里 players[0] 就是「我」——首页录战绩时按添加顺序排列，
- * 自己永远是第一个。index.ts 的胜率也是这么算的。
+ * ⚠️ 不要在这里用 players[0]：players 的顺序取决于用户点牌友的先后，
+ * 「我」完全可能不在首位，那样所有个人视角统计都会算成别人的。
+ * 唯一判定入口见 storage.ts 的 selfIn / selfScoreIn。
  */
 function selfScore(record: GameRecord): number | null {
-  const me = record.players[0];
-  return me ? me.score : null;
+  return selfScoreIn(record);
+}
+
+/** 「我」的总胜率（0~1）；一局都没参与返回 0 */
+export function calcSelfWinRate(records: GameRecord[]): number {
+  let played = 0;
+  let wins = 0;
+  for (const r of records) {
+    const score = selfScoreIn(r);
+    if (score === null) continue;
+    played += 1;
+    if (score > 0) wins += 1;
+  }
+  return played > 0 ? wins / played : 0;
 }
 
 /**

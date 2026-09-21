@@ -12,7 +12,7 @@
     <view class="agreement-section">
       <view class="section-title">📌 协议说明</view>
       <view class="section-content">
-        本协议是你与雀战录运营者（以下简称"我们"）之间关于使用雀战录小程序所订立的协议。
+        本协议是你与雀战录运营者（以下简称"我们"）之间关于使用雀战录微信小程序所订立的协议。
         请在使用前仔细阅读，一旦开始使用即视为接受本协议全部条款。
       </view>
     </view>
@@ -20,13 +20,13 @@
     <view class="agreement-section">
       <view class="section-title">1️⃣ 服务内容</view>
       <view class="section-content">
-        雀战录是一款专为麻将爱好者设计的战绩记录工具，提供：
+        雀战录是一款运行于微信小程序平台的麻将战绩记录工具，提供：
         <view class="bullet-list">
           <view class="bullet">· 快速记分（单人操作，无需对手配合）</view>
-          <view class="bullet">· 福星克星分析（识别旺友/克星）</view>
-          <view class="bullet">· 牌运月历（追踪每日战绩）</view>
-          <view class="bullet">· 战绩分享卡（生成可分享的海报）</view>
-          <view class="bullet">· 云端同步（跨设备恢复数据）</view>
+          <view class="bullet">· 福星克星分析（识别你的福星 / 克星玩家）</view>
+          <view class="bullet">· 牌局月历（按日期追踪每日战绩）</view>
+          <view class="bullet">· 战绩分享卡（小程序内生成可分享至聊天/朋友圈的卡片图片）</view>
+          <view class="bullet">· <text class="hl">登录后</text>云端同步（跨设备恢复数据）</view>
         </view>
       </view>
     </view>
@@ -38,14 +38,15 @@
         <view class="bullet-list">
           <view class="bullet pos">· 仅记录本人实际参与的牌局战绩</view>
           <view class="bullet pos">· 录入真实分数，不伪造数据</view>
-          <view class="bullet pos">· 尊重其他玩家，使用真实昵称或代号</view>
-          <view class="bullet neg">· 不利用本服务从事赌博、抽水等违法活动</view>
-          <view class="bullet neg">· 不录入涉及金钱的赌博结算内容</view>
-          <view class="bullet neg">· 不传播色情、暴力、虚假信息</view>
-          <view class="bullet neg">· 不进行反编译、爬虫、商业转售等行为</view>
+          <view class="bullet pos">· 尊重其他玩家，使用真实昵称或代号（<text class="hl">建议不要使用真实姓名</text>）</view>
+          <view class="bullet neg">· 不利用本服务从事赌博、抽水、计佣等违法活动</view>
+          <view class="bullet neg">· 不录入任何涉及金钱的赌博结算信息</view>
+          <view class="bullet neg">· 不传播色情、暴力、虚假、违规信息</view>
+          <view class="bullet neg">· 不进行反编译、爬虫、批量抓取、商业转售等行为</view>
         </view>
         <view class="warn-box">
-          ⚠️ 本工具仅用于<text class="hl">记录娱乐战绩</text>，不构成任何形式的支付、结算或赌博服务。
+          ⚠️ 本工具仅用于<text class="hl">记录娱乐战绩</text>，不构成任何形式的支付、结算、抽水或赌博服务。
+          一切使用本工具参与赌博产生的法律后果，由用户自行承担。
         </view>
       </view>
     </view>
@@ -53,10 +54,10 @@
     <view class="agreement-section">
       <view class="section-title">3️⃣ 知识产权</view>
       <view class="section-content">
-        · 雀战录的名称、Logo、UI 设计、文案、代码均归我们所有<br/>
-        · 你录入的战绩数据归你本人所有<br/>
-        · 未经授权，不得复制、修改、分发本应用的任何部分<br/>
-        · 你可以使用分享卡功能将战绩分享至第三方平台（朋友圈、好友）
+        · 雀战录的名称、Logo、UI 设计、文案、源代码均归我们所有<br/>
+        · 你录入的战绩数据归你本人所有（参考隐私政策第 4 条）<br/>
+        · 未经授权，不得复制、修改、分发本小程序的任何部分<br/>
+        · 你可使用分享卡功能将战绩分享至第三方平台（聊天、朋友圈）
       </view>
     </view>
 
@@ -65,17 +66,27 @@
       <view class="section-content">
         <view class="sub-item">
           <view class="sub-title">· 基础功能永久免费</view>
-          <view class="sub-content">记分、战绩列表、福星克星、牌运月历、数据导出/导入均免费使用，无场次限制。</view>
+          <view class="sub-content">记分、战绩列表、本地存储、数据导出/导入均免费使用，无场次限制。</view>
         </view>
         <view class="sub-item">
-          <view class="sub-title">· 云端同步免费</view>
-          <view class="sub-content">当前阶段云端备份与跨设备同步免费，不设容量上限。</view>
-        </view>
-        <view class="sub-item">
-          <view class="sub-title">· 未来可能的增值服务</view>
+          <view class="sub-title">· 福星克星榜</view>
           <view class="sub-content">
-            如未来推出付费功能（如 AI 牌运分析、专属皮肤），会提前在 App 内告知，
-            且基础功能不会受影响。
+            福星榜免费查看全部；克星榜免费看 TOP1，完整榜单可通过观看激励广告解锁 24 小时，
+            或升级 Pro（Pro 用户看全量）。
+          </view>
+        </view>
+        <view class="sub-item">
+          <view class="sub-title">· 云端同步</view>
+          <view class="sub-content">
+            免费用户云端仅保留「最近 3 个有数据的日期」；Pro 用户不受此限制。
+          </view>
+        </view>
+        <view class="sub-item">
+          <view class="sub-title">· Pro 等级（可选付费）</view>
+          <view class="sub-content">
+            我们提供 Pro 终身一档：<text class="hl">¥9.9 一次性付费</text>，按微信虚拟支付计费。
+            升级后享：克星榜全量、云端保留全量、后续新增 Pro 功能。
+            虚拟支付遵循微信官方规则，订单不可退换。
           </view>
         </view>
       </view>
@@ -86,12 +97,12 @@
       <view class="section-content">
         我们保留随时修改或中止本服务的权利，包括但不限于：
         <view class="bullet-list">
-          <view class="bullet">· 新增/删除功能</view>
-          <view class="bullet">· 修改计费策略（如未来收费）</view>
-          <view class="bullet">· 因技术原因暂停服务</view>
-          <view class="bullet">· 因违反本协议停止你的使用</view>
+          <view class="bullet">· 新增 / 下线功能</view>
+          <view class="bullet">· 调整付费档位（如未来增加新档位）</view>
+          <view class="bullet">· 因技术、维护原因暂停服务</view>
+          <view class="bullet">· 因违反本协议或法律法规暂停 / 终止违规账号使用</view>
         </view>
-        重大变更会提前 7 天通过 App 内通知。
+        重大变更会提前 7 天通过小程序内通知。
       </view>
     </view>
 
@@ -100,10 +111,10 @@
       <view class="section-content">
         <view class="disclaimer-list">
           <view class="disc-item">· 服务按"现状"提供，不承诺无中断、无错误</view>
-          <view class="disc-item">· 因网络、设备、自然灾害等不可抗力导致的服务中断，不承担责任</view>
-          <view class="disc-item">· 你录入的数据应自行备份，我们不对数据丢失承担赔偿责任</view>
+          <view class="disc-item">· 因不可抗力（不能预见、不能避免、不能克服的客观情况）导致的服务中断，不承担责任</view>
+          <view class="disc-item">· 你录入的数据应自行做好本地备份；我们不对因账号注销、误操作、设备丢失等导致的云端数据丢失承担赔偿责任</view>
           <view class="disc-item">· 不对使用本服务产生的任何间接损失承担责任</view>
-          <view class="disc-item">· 你应遵守当地法律法规，与赌博相关的使用风险自担</view>
+          <view class="disc-item">· 你应遵守当地法律法规；与赌博相关的使用风险及法律后果完全自担</view>
         </view>
       </view>
     </view>
@@ -113,7 +124,7 @@
       <view class="section-content">
         我们可能根据业务调整修改本协议，修改后会：
         <view class="bullet-list">
-          <view class="bullet">· 在 App 内显著位置公示</view>
+          <view class="bullet">· 在小程序内显著位置公示</view>
           <view class="bullet">· 至少提前 7 天生效</view>
           <view class="bullet">· 重大变更会重新征求你的同意</view>
         </view>
@@ -125,7 +136,7 @@
       <view class="section-title">8️⃣ 适用法律</view>
       <view class="section-content">
         本协议的解释、效力及争议解决均适用<text class="hl">中华人民共和国法律</text>。
-        如发生争议，双方应友好协商；协商不成的，提交运营者所在地人民法院管辖。
+        如发生争议，双方应友好协商；协商不成的，提交<text class="hl">被告所在地</text>人民法院管辖。
       </view>
     </view>
 
@@ -135,8 +146,8 @@
         如对本协议有任何疑问：
         <view class="contact-info">
           · 微信小程序内"我的"→"意见反馈"<br/>
-          · 邮箱：legal@paiyunbao.example<br/>
-          · 我们会在 7 个工作日内回复
+          · 邮箱：quezhanlu@example.com<br/>
+          · 我们会在 <text class="hl">15 个工作日</text>内回复
         </view>
       </view>
     </view>
