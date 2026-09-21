@@ -117,13 +117,9 @@ function buildFreeSyncCopy(records: GameRecord[], allDates: string[], windowDate
   const kept = records.filter(r => keepDates.has(formatDate(r.playedAt))).length;
   const dropped = records.length - kept;
 
-  const head = `将把本地 ${records.length} 条战绩（分布在 ${allDates.length} 个日期）推送到云端。`;
-  const dupe = '云端按战绩 ID 去重，重复点同步不会产生脏数据。';
-
   return dropped > 0
-    ? `${head}\n\n免费版云端只保留最近 ${windowDates} 个有数据的日期：本次推送后云端实际保留约 ${kept} 条，` +
-      `另有 ${dropped} 条更早的战绩在云端不保留（本地数据不受影响，升级 Pro 后可重新上传）。\n\n${dupe}`
-    : `${head}\n\n都在最近 ${windowDates} 个有数据的日期范围内，云端会全部保留。\n\n${dupe}`;
+    ? `将把本地 ${records.length} 条战绩（分布在 ${allDates.length} 个日期）推送到云端。\n\n免费版云端只保留最近 ${windowDates} 个有数据的日期（约 ${kept} 条），更早的 ${dropped} 条不会上云。`
+    : `将把本地 ${records.length} 条战绩推送到云端，全部保留。`;
 }
 
 /**
@@ -505,7 +501,7 @@ Page({
     const windowDates = getFreeWindowDates();
     const allDates = Array.from(new Set(records.map(r => formatDate(r.playedAt))));
     const content = pro
-      ? `将把本地 ${records.length} 条战绩（分布在 ${allDates.length} 个日期）全量推送到云端，永久保存。\n\n云端按战绩 ID 去重，重复点同步不会产生脏数据。`
+      ? `将把本地 ${records.length} 条战绩推送到云端，永久保存。`
       : buildFreeSyncCopy(records, allDates, windowDates);
 
     wx.showModal({
