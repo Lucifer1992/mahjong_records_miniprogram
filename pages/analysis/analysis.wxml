@@ -82,12 +82,12 @@
             <view class="fortune-nick">{{ item.partnerNickname }}</view>
             <view class="fortune-meta">
               <text class="meta-tag">同桌 {{ item.gamesTogether }} 次</text>
-              <text class="meta-tag meta-tag-success">胜率 {{ item.winRateText }}</text>
+              <text class="meta-tag meta-tag-success">你胜率 {{ item.winRateText }}</text>
             </view>
           </view>
           <view class="fortune-score-wrap">
             <view class="fortune-score t-success">{{ item.netScoreText }}</view>
-            <view class="fortune-score-label">净胜分</view>
+            <view class="fortune-score-label">你净胜分</view>
           </view>
         </view>
       </view>
@@ -122,12 +122,12 @@
             <view class="fortune-nick">{{ item.partnerNickname }}</view>
             <view class="fortune-meta">
               <text class="meta-tag">同桌 {{ item.gamesTogether }} 次</text>
-              <text class="meta-tag meta-tag-danger">胜率 {{ item.winRateText }}</text>
+              <text class="meta-tag meta-tag-danger">你胜率 {{ item.winRateText }}</text>
             </view>
           </view>
           <view class="fortune-score-wrap">
             <view class="fortune-score t-danger">{{ item.netScoreText }}</view>
-            <view class="fortune-score-label">净胜分</view>
+            <view class="fortune-score-label">你净胜分</view>
           </view>
         </view>
 

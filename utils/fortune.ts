@@ -31,9 +31,12 @@ export function analyzeFortune(
   }
 
   // 2. 统计与每个其他玩家的同桌表现
+  // 胜率口径：胜场数 / (同桌场数 - 平局数)；平局既不算赢也不算输，分母里剔除
+  // 例：同桌 10 局，赢 6 平 2 输 2 → 6/(10-2) = 75%（不是 6/10 = 60%）
   const partnerMap = new Map<string, {
     games: number;
-    wins: number;  // 目标玩家在这组合下赢的场次
+    wins: number;
+    ties: number;
     netScore: number;
   }>();
 
@@ -50,10 +53,12 @@ export function analyzeFortune(
       const stat = partnerMap.get(other.playerId) || {
         games: 0,
         wins: 0,
+        ties: 0,
         netScore: 0
       };
       stat.games += 1;
       if (won) stat.wins += 1;
+      else if (tied) stat.ties += 1;
       stat.netScore += target.score;
       partnerMap.set(other.playerId, stat);
     }
@@ -65,12 +70,13 @@ export function analyzeFortune(
       const partnerRecord = relevantRecords
         .flatMap(r => r.players)
         .find(p => p.playerId === partnerId);
+      const denom = stat.games - stat.ties;
       return {
         partnerId,
         partnerNickname: partnerRecord?.nickname || '未知',
         gamesTogether: stat.games,
         winsTogether: stat.wins,
-        winRate: stat.games > 0 ? stat.wins / stat.games : 0,
+        winRate: denom > 0 ? stat.wins / denom : 0,
         netScore: stat.netScore
       };
     })
