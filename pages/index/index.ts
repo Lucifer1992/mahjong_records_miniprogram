@@ -411,7 +411,7 @@ Page({
   onConfirmAddRecent() {
     const picked = this.data.recentPlayers.filter(p => p.checked && !p.inGame);
     if (picked.length === 0) {
-      this.setData({ showRecentPlayers: false });
+      wx.showToast({ title: '请先勾选要加入的牌友', icon: 'none' });
       return;
     }
 

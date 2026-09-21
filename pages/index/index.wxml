@@ -250,7 +250,7 @@
         <view wx:for="{{ recentLineups }}" wx:key="id"
               class="recent-combo"
               data-index="{{ index }}"
-              bindtap="onApplyLineup"
+              catchtap="onApplyLineup"
               hover-class="recent-combo-hover">
           <view class="recent-combo-label">{{ item.label }}</view>
           <view class="recent-combo-text">{{ item.text }}</view>
@@ -262,7 +262,7 @@
       <view wx:for="{{ recentPlayers }}" wx:key="id"
             class="recent-row {{ item.inGame ? 'recent-row-ingame' : '' }}"
             data-index="{{ index }}"
-            bindtap="onToggleRecentPlayer"
+            catchtap="onToggleRecentPlayer"
             bindlongpress="onLongPressRecentPlayer"
             hover-class="recent-row-hover">
         <view class="recent-avatar avatar-grad-{{ (index % 8) + 1 }}">
@@ -286,7 +286,7 @@
     </scroll-view>
 
     <view class="recent-confirm {{ recentCheckedCount > 0 ? '' : 'is-disabled' }}"
-          bindtap="onConfirmAddRecent">
+          catchtap="onConfirmAddRecent">
       <text wx:if="{{ recentCheckedCount > 0 }}">加入本局（{{ recentCheckedCount }}）</text>
       <text wx:else>勾选牌友后加入</text>
     </view>
