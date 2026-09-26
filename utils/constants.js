@@ -51,6 +51,7 @@ export function ruleColor(ruleType, ruleName = '') {
  * 时段选项
  */
 export const DURATIONS = [
+    { id: 'morning', name: '上午', icon: '🌅' },
     { id: 'afternoon', name: '下午', icon: '☀️' },
     { id: 'evening', name: '晚上', icon: '🌙' },
     { id: 'overnight', name: '通宵', icon: '🌃' }

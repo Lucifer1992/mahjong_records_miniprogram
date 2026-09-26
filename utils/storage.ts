@@ -374,7 +374,7 @@ export function rememberLastRuleType(ruleType: RuleType): void {
 /**
  * 记录用户本次保存的时段（首页 onLoad 优先用它作默认选中）
  */
-export function rememberLastDuration(duration: 'afternoon' | 'evening' | 'overnight'): void {
+export function rememberLastDuration(duration: 'morning' | 'afternoon' | 'evening' | 'overnight'): void {
   updateSettings({ lastDuration: duration });
 }
 

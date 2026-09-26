@@ -20,7 +20,7 @@ export type RuleType =
 /**
  * 时段
  */
-export type GameDuration = 'afternoon' | 'evening' | 'overnight';
+export type GameDuration = 'morning' | 'afternoon' | 'evening' | 'overnight';
 
 /**
  * 心情
@@ -120,10 +120,10 @@ export interface Settings {
    */
   lastRuleType?: RuleType;
   /**
-   * 上一次记分用的时段（afternoon / evening / overnight）
+   * 上一次记分用的时段（morning / afternoon / evening / overnight）
    * - 新用户没有 → 按本机时间自动判断
    */
-  lastDuration?: 'afternoon' | 'evening' | 'overnight';
+  lastDuration?: GameDuration;
 }
 
 /**
@@ -153,6 +153,7 @@ export const RULE_LABELS: Record<RuleType, string> = {
  * 时段标签
  */
 export const DURATION_LABELS: Record<GameDuration, string> = {
+  morning: '上午',
   afternoon: '下午',
   evening: '晚上',
   overnight: '通宵'

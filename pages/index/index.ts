@@ -755,7 +755,7 @@ Page({
     // 记住本次玩法，下次进首页时默认选中
     rememberLastRuleType(this.data.selectedRule.id as RuleType);
     // 记住本次时段，下次进首页时优先用它（无历史时仍按本机时间推断）
-    rememberLastDuration(this.data.selectedDuration.id as 'afternoon' | 'evening' | 'overnight');
+    rememberLastDuration(this.data.selectedDuration.id as 'morning' | 'afternoon' | 'evening' | 'overnight');
 
     // 后台异步推云端（不影响 UI；失败会入重试队列）
     enqueuePush(record.id);

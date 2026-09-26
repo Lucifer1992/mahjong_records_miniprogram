@@ -24,6 +24,7 @@ export const RULE_LABELS = {
  * 时段标签
  */
 export const DURATION_LABELS = {
+    morning: '上午',
     afternoon: '下午',
     evening: '晚上',
     overnight: '通宵'

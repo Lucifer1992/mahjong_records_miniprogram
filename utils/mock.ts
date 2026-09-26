@@ -291,8 +291,15 @@ export function generateMockData(seed = 20260913): { records: GameRecord[]; play
     // 一次牌局：玩法、时段固定，人数与心情每局独立
     const ruleType = weightedRule(rng);
     const roll = rng();
-    const duration: GameDuration = roll < 0.22 ? 'afternoon' : roll < 0.85 ? 'evening' : 'overnight';
-    const startHour = duration === 'afternoon' ? 14 : duration === 'evening' ? 19 : 22;
+    // 时段分布：上午 10% / 下午 20% / 晚上 60% / 通宵 10%
+    const duration: GameDuration =
+      roll < 0.10 ? 'morning' :
+      roll < 0.30 ? 'afternoon' :
+      roll < 0.90 ? 'evening' : 'overnight';
+    const startHour =
+      duration === 'morning' ? 9 :
+      duration === 'afternoon' ? 14 :
+      duration === 'evening' ? 19 : 22;
 
     let clock = day.getTime() + startHour * 3600000 + intBetween(rng, 0, 3) * 900000;
     const rounds = intBetween(rng, 2, 5);
