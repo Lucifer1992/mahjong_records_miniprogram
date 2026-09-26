@@ -1,4 +1,13 @@
 // utils/types.ts - 全局类型定义
+/** 4 个方位的固定顺序（东→南→西→北，逆时针）。批量添加牌友时按这个顺序勾选 */
+export const SEAT_ORDER = ['east', 'south', 'west', 'north'];
+/** 方位中文显示 */
+export const SEAT_LABELS = {
+    east: '东',
+    south: '南',
+    west: '西',
+    north: '北'
+};
 /**
  * 玩家颜色池（用于头像）
  */

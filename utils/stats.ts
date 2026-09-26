@@ -165,3 +165,68 @@ export function filterRecordsByPlayer(
   if (!playerId) return records;
   return records.filter(r => r.players.some(p => p.playerId === playerId));
 }
+
+/**
+ * 当日会话：按 2 小时间隔切分，返回「当前会话」的统计
+ *
+ * 「当前会话」的判定（2026-09-26 与铁匠确认）：
+ * - 把所有战绩按 playedAt 倒序
+ * - 找最新一局作为起点
+ * - 后续每一局必须距离上一局 ≤ intervalMs 才算同一会话
+ * - 遇到间隔 > intervalMs 的局 → 新会话开始，停止累加
+ *
+ * 边界场景：
+ * - 14:00 → 15:30 → 同一会话（间隔 1.5h）
+ * - 14:00 → 16:30 → 切分（间隔 2.5h > 2h 阈值）
+ * - 跨夜：22:00 → 02:00 → 同一会话（间隔 4h，但只要没断 2h+ 就算同一会话）
+ *   等下，4h > 2h 阈值，会切分。修：用户持续打牌时，应该**用"上一局"作锚点**，
+ *   间隔计算的是「上一局和当前局」之间，不是「本局和会话起点」之间。
+ *
+ * 算法：倒序遍历，相邻两局间隔 ≤ intervalMs 算同会话；遇到 > intervalMs 的停止。
+ *
+ * @param records 全部战绩（内部排序）
+ * @param now 当前时间戳（毫秒）
+ * @param myPlayerId 「我」的 playerId；不传则 netScore 恒为 0
+ * @param intervalMs 会话间隔阈值（默认 2 小时）
+ */
+export interface DailySession {
+  /** 当前会话内的局数 */
+  games: number;
+  /** 当前会话内「我」的净胜分之和 */
+  netScore: number;
+  /** 当前会话第一局的 playedAt（用于展示「今日开始时间」） */
+  startAt: number;
+}
+
+export function calcDailySession(
+  records: GameRecord[],
+  now: number,
+  myPlayerId?: string,
+  intervalMs: number = 2 * 60 * 60 * 1000
+): DailySession {
+  const sorted = [...records].sort((a, b) => b.playedAt - a.playedAt);
+  if (sorted.length === 0) {
+    return { games: 0, netScore: 0, startAt: now };
+  }
+
+  let games = 0;
+  let netScore = 0;
+  let startAt = sorted[0].playedAt;
+  let prevAt = sorted[0].playedAt;
+
+  for (const r of sorted) {
+    if (games > 0) {
+      const interval = prevAt - r.playedAt;  // 倒序：prev 更新，prev - r = 间隔
+      if (interval > intervalMs) break;       // 切分，停止
+    }
+    games += 1;
+    if (myPlayerId) {
+      const me = r.players.find(p => p.playerId === myPlayerId);
+      if (me) netScore += me.score;
+    }
+    startAt = r.playedAt;
+    prevAt = r.playedAt;
+  }
+
+  return { games, netScore, startAt };
+}

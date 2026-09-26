@@ -127,3 +127,29 @@ export function filterRecordsByPlayer(records, playerId) {
         return records;
     return records.filter(r => r.players.some(p => p.playerId === playerId));
 }
+export function calcDailySession(records, now, myPlayerId, intervalMs = 2 * 60 * 60 * 1000) {
+    const sorted = [...records].sort((a, b) => b.playedAt - a.playedAt);
+    if (sorted.length === 0) {
+        return { games: 0, netScore: 0, startAt: now };
+    }
+    let games = 0;
+    let netScore = 0;
+    let startAt = sorted[0].playedAt;
+    let prevAt = sorted[0].playedAt;
+    for (const r of sorted) {
+        if (games > 0) {
+            const interval = prevAt - r.playedAt; // 倒序：prev 更新，prev - r = 间隔
+            if (interval > intervalMs)
+                break; // 切分，停止
+        }
+        games += 1;
+        if (myPlayerId) {
+            const me = r.players.find(p => p.playerId === myPlayerId);
+            if (me)
+                netScore += me.score;
+        }
+        startAt = r.playedAt;
+        prevAt = r.playedAt;
+    }
+    return { games, netScore, startAt };
+}

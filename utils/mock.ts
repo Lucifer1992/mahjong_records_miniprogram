@@ -164,7 +164,8 @@ function buildScores(
     nickname: table[0],
     score: mine,
     isSubstitute: false,
-    isObserver: false
+    isObserver: false,
+    seat: 'east'
   }];
 
   for (let i = 0; i < others; i++) {
@@ -173,7 +174,8 @@ function buildScores(
       nickname: table[i + 1],
       score: finalShares[i] * 5,
       isSubstitute: false,
-      isObserver: false
+      isObserver: false,
+      seat: (['south', 'west', 'north'] as const)[i] || null
     });
   }
 

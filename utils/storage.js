@@ -1,5 +1,21 @@
 // utils/storage.ts - 本地存储封装
-import { PLAYER_COLORS } from './types';
+import { PLAYER_COLORS, SEAT_ORDER } from './types';
+/**
+ * 给本局新玩家分配座位：按东→南→西→北 顺序找第一个空位。
+ *
+ * 批量添加牌友时按这个顺序勾选，让"对家是谁"有视觉锚点；
+ * 3 人局用户选哪个方位空，就把对应方位留空。
+ *
+ * 全满（4 人）返回 null，由调用方决定是拒绝还是允许（观战/替补不分座位）。
+ */
+export function pickNextSeat(players) {
+    const occupied = new Set(players.map(p => p.seat).filter((s) => !!s));
+    for (const seat of SEAT_ORDER) {
+        if (!occupied.has(seat))
+            return seat;
+    }
+    return null;
+}
 /**
  * Storage 键名
  */

@@ -44,6 +44,24 @@ export interface GameRecord {
 }
 
 /**
+ * 麻将牌桌的 4 个方位（按逆时针顺序）
+ * 东南西北与「谁是庄家」「东位起庄」无关——只是 UI 上让用户按固定方位勾选入座
+ * 拖拽换位时方位跟随玩家走，不重新计算旺友克星（克星算法基于 playerId）
+ */
+export type Seat = 'east' | 'south' | 'west' | 'north';
+
+/** 4 个方位的固定顺序（东→南→西→北，逆时针）。批量添加牌友时按这个顺序勾选 */
+export const SEAT_ORDER: Seat[] = ['east', 'south', 'west', 'north'];
+
+/** 方位中文显示 */
+export const SEAT_LABELS: Record<Seat, string> = {
+  east: '东',
+  south: '南',
+  west: '西',
+  north: '北'
+};
+
+/**
  * 玩家分数
  */
 export interface PlayerScore {
@@ -52,6 +70,12 @@ export interface PlayerScore {
   score: number;
   isSubstitute: boolean;
   isObserver: boolean;
+  /**
+   * 玩家在本局的座位（null = 未入座或 3 人局空位）。
+   * 座位顺序：东→南→西→北（逆时针）。
+   * 拖拽换位时会互换对方座位（见 index.ts 的 onDropPlayerSeat）。
+   */
+  seat: Seat | null;
 }
 
 /**

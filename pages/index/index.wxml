@@ -48,7 +48,6 @@
       </view>
     </picker>
 
-    <!-- 自定义玩法：占满下一行的灰色 placeholder 输入框，点击即编辑 -->
     <view wx:if="{{ selectedRule.id === 'custom' }}" class="custom-rule-input-wrap">
       <input id="customRuleInput"
              class="custom-rule-input"
@@ -79,38 +78,140 @@
     </view>
   </view>
 
-  <!-- 玩家选择 -->
+  <!-- ===== 真实牌桌：4 方位头像 + 中心本局 ===== -->
   <view class="card section-card">
     <view class="section-header">
       <view class="section-title-wrap">
         <view class="section-bar"></view>
-        <text class="section-title">牌友</text>
+        <text class="section-title">本局牌桌</text>
       </view>
-      <text class="section-meta">{{ players.length }} / 4 人</text>
-    </view>
-
-    <view wx:if="{{ players.length > 0 }}" class="player-chips">
-      <view wx:for="{{ players }}" wx:key="playerId"
-            class="player-chip"
-            data-index="{{ index }}"
-            bindtap="onTapPlayer"
-            hover-class="player-chip-hover"
-            hover-stay-time="60">
-        <view class="player-chip-avatar avatar-grad-{{ item.avatarIdx || 1 }}">
-          {{ item.nickname[0] }}
-        </view>
-        <text class="player-chip-name">{{ item.nickname }}</text>
-        <view class="chip-remove" data-index="{{ index }}" catchtap="onRemovePlayer">
-          <text>×</text>
-        </view>
+      <view wx:if="{{ players.length >= 2 }}" class="score-badge {{ scoreValid ? 'score-badge-pos' : 'score-badge-neg' }}">
+        总和 {{ totalScore }} {{ scoreValid ? '✓' : '≠ 0' }}
       </view>
     </view>
 
-    <view wx:else class="player-empty">
-      <text class="player-empty-icon">👥</text>
-      <text class="player-empty-text">先添加几位牌友开始记分吧</text>
+    <!-- 当日累计（自动按 2h 间隔切分会话） -->
+    <view wx:if="{{ players.length >= 2 }}" class="daily-strip">
+      <view class="daily-strip-item">
+        <view class="daily-strip-num">{{ dailyStats.games }}</view>
+        <view class="daily-strip-label">当日局数</view>
+      </view>
+      <view class="daily-strip-divider"></view>
+      <view class="daily-strip-item">
+        <view class="daily-strip-num {{ dailyStats.netScore > 0 ? 'is-pos' : dailyStats.netScore < 0 ? 'is-neg' : '' }}">
+          {{ dailyStats.netScore > 0 ? '+' : '' }}{{ dailyStats.netScore }}
+        </view>
+        <view class="daily-strip-label">当日累计</view>
+      </view>
     </view>
 
+    <!-- 牌桌（含背景图 + 4 头像 + 中心） -->
+    <view class="table-wrap" catchtap="onCancelDrag">
+      <image class="table-bg" src="/assets/mahjong-table.jpg" mode="aspectFill"></image>
+
+      <!-- 中心：本局总分 + 第几局 -->
+      <view wx:if="{{ players.length >= 2 }}" class="table-center">
+        <view class="center-round-num">第 {{ dailyStats.games + 1 }} 局</view>
+        <view class="center-round-score">
+          <text wx:if="{{ totalScore >= 0 }}">+{{ totalScore }}</text>
+          <text wx:else>{{ totalScore }}</text>
+        </view>
+        <view class="center-round-status">
+          <text wx:if="{{ scoreValid }}" class="ok">平账 ✓</text>
+          <text wx:else class="warn">不平账</text>
+        </view>
+      </view>
+
+      <!-- 北（上） -->
+      <view wx:if="{{ seats.north }}" class="seat seat-north {{ dragSource === 'north' ? 'seat-dragging' : (dragSource && dragSource !== 'north' ? 'seat-drop-target' : '') }}">
+        <view class="seat-pos-label">北</view>
+        <view class="seat-avatar {{ seats.north.isEvil ? 'seat-avatar-evil' : '' }}"
+              data-seat="north"
+              bindtap="onTapSeat"
+              bindlongpress="onLongPressSeat"
+              catchtouchend="onTapSeat">
+          {{ seats.north.nickname[0] }}
+        </view>
+        <view wx:if="{{ seats.north.score > 0 || seats.north.score < 0 }}" class="seat-score {{ seats.north.score < 0 ? 'is-neg' : '' }}">
+          <text wx:if="{{ seats.north.score > 0 }}">+{{ seats.north.score }}</text>
+          <text wx:else>{{ seats.north.score }}</text>
+        </view>
+        <view wx:if="{{ seats.north.isEvil }}" class="seat-evil-tag">克星</view>
+        <view class="seat-plus" data-seat="north" catchtap="onTapSeatPlus">+</view>
+      </view>
+      <view wx:else class="seat seat-north seat-empty" data-seat="north" bindtap="onTapEmptySeat">
+        <view class="seat-pos-label">北</view>
+        <view class="seat-avatar-empty">+</view>
+      </view>
+
+      <!-- 东（右） -->
+      <view wx:if="{{ seats.east }}" class="seat seat-east {{ dragSource === 'east' ? 'seat-dragging' : (dragSource && dragSource !== 'east' ? 'seat-drop-target' : '') }}">
+        <view class="seat-pos-label seat-pos-right">东</view>
+        <view class="seat-avatar {{ seats.east.isEvil ? 'seat-avatar-evil' : '' }}"
+              data-seat="east"
+              bindtap="onTapSeat"
+              bindlongpress="onLongPressSeat"
+              catchtouchend="onTapSeat">
+          {{ seats.east.nickname[0] }}
+        </view>
+        <view wx:if="{{ seats.east.score > 0 || seats.east.score < 0 }}" class="seat-score {{ seats.east.score < 0 ? 'is-neg' : '' }}">
+          <text wx:if="{{ seats.east.score > 0 }}">+{{ seats.east.score }}</text>
+          <text wx:else>{{ seats.east.score }}</text>
+        </view>
+        <view wx:if="{{ seats.east.isEvil }}" class="seat-evil-tag">克星</view>
+        <view class="seat-plus" data-seat="east" catchtap="onTapSeatPlus">+</view>
+      </view>
+      <view wx:else class="seat seat-east seat-empty" data-seat="east" bindtap="onTapEmptySeat">
+        <view class="seat-pos-label seat-pos-right">东</view>
+        <view class="seat-avatar-empty">+</view>
+      </view>
+
+      <!-- 南（下） -->
+      <view wx:if="{{ seats.south }}" class="seat seat-south {{ dragSource === 'south' ? 'seat-dragging' : (dragSource && dragSource !== 'south' ? 'seat-drop-target' : '') }}">
+        <view class="seat-pos-label">南</view>
+        <view class="seat-avatar {{ seats.south.isEvil ? 'seat-avatar-evil' : '' }}"
+              data-seat="south"
+              bindtap="onTapSeat"
+              bindlongpress="onLongPressSeat"
+              catchtouchend="onTapSeat">
+          {{ seats.south.nickname[0] }}
+        </view>
+        <view wx:if="{{ seats.south.score > 0 || seats.south.score < 0 }}" class="seat-score {{ seats.south.score < 0 ? 'is-neg' : '' }}">
+          <text wx:if="{{ seats.south.score > 0 }}">+{{ seats.south.score }}</text>
+          <text wx:else>{{ seats.south.score }}</text>
+        </view>
+        <view wx:if="{{ seats.south.isEvil }}" class="seat-evil-tag">克星</view>
+        <view class="seat-plus" data-seat="south" catchtap="onTapSeatPlus">+</view>
+      </view>
+      <view wx:else class="seat seat-south seat-empty" data-seat="south" bindtap="onTapEmptySeat">
+        <view class="seat-pos-label">南</view>
+        <view class="seat-avatar-empty">+</view>
+      </view>
+
+      <!-- 西（左） -->
+      <view wx:if="{{ seats.west }}" class="seat seat-west {{ dragSource === 'west' ? 'seat-dragging' : (dragSource && dragSource !== 'west' ? 'seat-drop-target' : '') }}">
+        <view class="seat-pos-label seat-pos-left">西</view>
+        <view class="seat-avatar {{ seats.west.isEvil ? 'seat-avatar-evil' : '' }}"
+              data-seat="west"
+              bindtap="onTapSeat"
+              bindlongpress="onLongPressSeat"
+              catchtouchend="onTapSeat">
+          {{ seats.west.nickname[0] }}
+        </view>
+        <view wx:if="{{ seats.west.score > 0 || seats.west.score < 0 }}" class="seat-score {{ seats.west.score < 0 ? 'is-neg' : '' }}">
+          <text wx:if="{{ seats.west.score > 0 }}">+{{ seats.west.score }}</text>
+          <text wx:else>{{ seats.west.score }}</text>
+        </view>
+        <view wx:if="{{ seats.west.isEvil }}" class="seat-evil-tag">克星</view>
+        <view class="seat-plus" data-seat="west" catchtap="onTapSeatPlus">+</view>
+      </view>
+      <view wx:else class="seat seat-west seat-empty" data-seat="west" bindtap="onTapEmptySeat">
+        <view class="seat-pos-label seat-pos-left">西</view>
+        <view class="seat-avatar-empty">+</view>
+      </view>
+    </view>
+
+    <!-- 添加牌友入口 -->
     <view class="add-player-row">
       <view class="recent-btn" bindtap="onShowRecentPlayers">
         <text class="recent-btn-icon">📋</text>
@@ -129,51 +230,20 @@
         <text>添加</text>
       </view>
     </view>
-  </view>
 
-  <!-- 分数录入 -->
-  <view wx:if="{{ players.length > 0 }}" class="card section-card">
-    <view class="section-header">
-      <view class="section-title-wrap">
-        <view class="section-bar"></view>
-        <text class="section-title">本局分数</text>
-      </view>
-      <view class="score-badge {{ scoreValid ? 'score-badge-pos' : 'score-badge-neg' }}">
-        总和 {{ totalScore }} {{ scoreValid ? '✓' : '≠ 0' }}
-      </view>
+    <view wx:if="{{ players.length === 0 }}" class="player-empty-tip">
+      添加 2-4 位牌友，按东→南→西→北 入座
     </view>
-
-    <view wx:for="{{ players }}" wx:key="playerId" class="score-row">
-      <view class="score-player">
-        <view class="avatar avatar-sm avatar-grad-{{ item.avatarIdx || 1 }}">
-          {{ item.nickname[0] }}
-        </view>
-        <text class="score-player-name">{{ item.nickname }}</text>
-      </view>
-      <view class="score-input-wrap">
-        <view class="sign-toggle {{ item.negative ? 'sign-toggle-neg' : '' }}"
-              data-index="{{ index }}"
-              bindtap="onToggleSign">
-          <text>{{ item.negative ? '−' : '+' }}</text>
-        </view>
-        <input class="score-input"
-               type="number"
-               placeholder="0"
-               placeholder-class="input-placeholder"
-               value="{{ item.scoreText }}"
-               data-index="{{ index }}"
-               bindinput="onScoreInput" />
-      </view>
+    <view wx:elif="{{ players.length < 2 }}" class="player-empty-tip">
+      至少需要 {{ 2 - players.length }} 位牌友才能开打
     </view>
-
-    <view wx:if="{{ !scoreValid }}" class="score-hint">
-      <text class="score-hint-icon">💡</text>
-      <text class="score-hint-text">所有人分数相加应等于 0。点左侧「+ / −」切换赢分 / 输分</text>
+    <view wx:elif="{{ !scoreValid }}" class="player-empty-tip warn">
+      💡 点任一头像弹计分卡，4 人分数合计需为 0
     </view>
   </view>
 
   <!-- 心情 -->
-  <view wx:if="{{ players.length > 0 }}" class="card section-card">
+  <view wx:if="{{ players.length >= 2 }}" class="card section-card">
     <view class="section-header">
       <view class="section-title-wrap">
         <view class="section-bar"></view>
@@ -194,7 +264,7 @@
   </view>
 
   <!-- 备注 -->
-  <view wx:if="{{ players.length > 0 }}" class="card section-card">
+  <view wx:if="{{ players.length >= 2 }}" class="card section-card">
     <view class="section-header">
       <view class="section-title-wrap">
         <view class="section-bar"></view>
@@ -211,40 +281,88 @@
               auto-height></textarea>
   </view>
 
-  <!-- 底部空状态：未添加玩家 -->
-  <view wx:if="{{ players.length === 0 }}" class="empty-state">
-    <view class="empty-illustration">
-      <text class="empty-emoji">🀄</text>
-    </view>
-    <text class="empty-title">开始你的第一局</text>
-    <text class="empty-subtitle">添加 2-4 位牌友，记录第一场战绩</text>
-  </view>
-
 </view>
 
 <!-- 底部操作栏 -->
-<view wx:if="{{ players.length > 0 }}" class="action-bar">
+<view wx:if="{{ players.length >= 2 }}" class="action-bar">
   <view class="action-bar-inner">
     <view class="btn-secondary" bindtap="onFinish">
       <text>查看战绩</text>
     </view>
     <view class="btn-primary-action {{ saveEnabled ? '' : 'btn-disabled' }}"
-          bindtap="onSave">
+           bindtap="onSave">
       <text class="btn-primary-icon">✓</text>
       <text>保存本局</text>
     </view>
   </view>
 </view>
-<!-- 历史牌友抽屉（多选：勾多位 → 底部「加入本局」一次性加入；顶部常用阵容一键勾选） -->
+
+<!-- ===== 中央计分弹窗（C 方案） ===== -->
+<view wx:if="{{ showScoreModal }}" class="modal-mask" bindtap="onCloseScoreModal">
+  <view class="modal" catchtap="">
+    <view class="modal-header">
+      <view class="modal-title">本局计分</view>
+      <view class="modal-close" catchtap="onCloseScoreModal">✕</view>
+    </view>
+
+    <view class="modal-body">
+      <view wx:for="{{ modalSeats }}" wx:key="seat"
+            class="modal-row">
+        <view class="modal-row-pos">{{ item.seatLabel }}</view>
+        <view class="modal-row-avatar {{ item.isEvil ? 'is-evil' : '' }}">{{ item.nickname[0] }}</view>
+        <view class="modal-row-info">
+          <view class="modal-row-name">{{ item.nickname }}</view>
+          <view wx:if="{{ item.isEvil }}" class="modal-row-evil">克星</view>
+        </view>
+        <view class="modal-row-input-wrap">
+          <view class="modal-sign-toggle {{ item.negative ? 'is-neg' : '' }}"
+                data-seat="{{ item.seat }}"
+                catchtap="onModalToggleSign">
+            <text>{{ item.negative ? '−' : '+' }}</text>
+          </view>
+          <input class="modal-score-input"
+                 type="number"
+                 placeholder="0"
+                 value="{{ item.scoreText }}"
+                 data-seat="{{ item.seat }}"
+                 bindinput="onModalScoreInput" />
+        </view>
+      </view>
+    </view>
+
+    <view class="modal-divider"></view>
+
+    <view class="modal-quick">
+      <view class="modal-quick-label">快捷分数</view>
+      <view class="modal-quick-list">
+        <view class="modal-quick-btn" data-value="-10" catchtap="onModalQuickScore">−10</view>
+        <view class="modal-quick-btn" data-value="-5" catchtap="onModalQuickScore">−5</view>
+        <view class="modal-quick-btn modal-quick-btn-pos" data-value="5" catchtap="onModalQuickScore">+5</view>
+        <view class="modal-quick-btn modal-quick-btn-pos" data-value="10" catchtap="onModalQuickScore">+10</view>
+        <view class="modal-quick-btn" data-value="20" catchtap="onModalQuickScore">+20</view>
+      </view>
+    </view>
+
+    <view class="modal-footer">
+      <view class="modal-total {{ scoreValid ? 'is-ok' : 'is-warn' }}">
+        总和 {{ totalScore }} {{ scoreValid ? '✓' : '≠ 0' }}
+      </view>
+      <view class="modal-save-btn {{ saveEnabled ? '' : 'is-disabled' }}" catchtap="onModalSave">
+        保存本局
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 历史牌友抽屉（多选：勾多位 → 底部「加入本局」一次性加入） -->
 <view class="recent-mask {{ showRecentPlayers ? 'is-visible' : '' }}"
       bindtap="onCloseRecentPlayers"
       wx:if="{{ showRecentPlayers }}">
   <view class="recent-panel" catchtap="">
     <view class="recent-close" bindtap="onCloseRecentPlayers">✕</view>
     <view class="recent-title">历史牌友</view>
-    <view class="recent-sub">可勾选多位一起加入 · 长按可删除档案</view>
+    <view class="recent-sub">按 东→南→西→北 顺序勾选入座</view>
 
-    <!-- 常用阵容（按最近 10 场自动统计，点一次勾上、再点一次取消） -->
     <scroll-view scroll-x class="recent-combo-scroll" wx:if="{{ recentLineups.length > 0 }}">
       <view class="recent-combo-list">
         <view wx:for="{{ recentLineups }}" wx:key="id"
@@ -287,8 +405,8 @@
 
     <view class="recent-confirm {{ recentCheckedCount > 0 ? '' : 'is-disabled' }}"
           catchtap="onConfirmAddRecent">
-      <text wx:if="{{ recentCheckedCount > 0 }}">加入本局（{{ recentCheckedCount }}）</text>
-      <text wx:else>勾选牌友后加入</text>
+      <text wx:if="{{ recentCheckedCount > 0 }}">入座牌桌 ({{ recentCheckedCount }})</text>
+      <text wx:else>勾选牌友后入座</text>
     </view>
   </view>
 </view>
