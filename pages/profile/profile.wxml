@@ -16,7 +16,7 @@
         </view>
         <view class="user-meta">
           <text wx:if="{{ isLoggedIn }}">{{ totalGames }} 场战绩 · {{ totalPlayers }} 位牌友</text>
-          <text wx:else>点此登录，享云端同步</text>
+          <text wx:else>点此登录，战绩自动备份</text>
         </view>
       </view>
       <view class="user-badge">
@@ -50,19 +50,19 @@
     <view class="sync-dot sync-{{ syncStatus }}"></view>
     <view class="sync-text-wrap">
       <block wx:if="{{ syncStatus === 'syncing' }}">
-        <text class="sync-text-main">正在同步...</text>
-        <text class="sync-text-sub">推送本地战绩到云端</text>
+        <text class="sync-text-main">正在备份...</text>
+        <text class="sync-text-sub">把本机战绩传到账号里</text>
       </block>
       <block wx:elif="{{ syncStatus === 'error' }}">
-        <text class="sync-text-main">上次同步失败</text>
-        <text class="sync-text-sub">数据已保存到本地，联网后会自动重试</text>
+        <text class="sync-text-main">上次备份失败</text>
+        <text class="sync-text-sub">战绩已存在本机，联网后会自动再试</text>
       </block>
       <block wx:elif="{{ syncStatus === 'pending' }}">
-        <text class="sync-text-main">{{ pendingCount }} 条待上传</text>
-        <text class="sync-text-sub">联网后自动同步，也可点下方「立即同步」</text>
+        <text class="sync-text-main">{{ pendingCount }} 条待备份</text>
+        <text class="sync-text-sub">联网后会自动备份，也可点下方「立即备份」</text>
       </block>
       <block wx:else>
-        <text class="sync-text-main">云端已同步</text>
+        <text class="sync-text-main">已备份到账号</text>
         <text class="sync-text-sub">共 {{ totalGames }} 条战绩</text>
       </block>
     </view>
@@ -74,7 +74,7 @@
       <view class="tier-badge">{{ isPro ? 'PRO' : 'FREE' }}</view>
       <view class="tier-title-wrap">
         <text class="tier-title">{{ isPro ? 'Pro 版' : '免费版' }}</text>
-        <text class="tier-sub">{{ isPro ? '云端永久保存全部战绩' : '云端只保留最近 ' + cloudWindowDates + ' 个有数据的日期' }}</text>
+        <text class="tier-sub">{{ isPro ? '全部战绩永久备份' : '只备份最近 ' + cloudWindowDates + ' 天，更早的不会备份' }}</text>
       </view>
       <view class="tier-action" bindtap="onUpgrade">
         <text>{{ isPro ? '权益' : '升级' }}</text>
@@ -87,7 +87,7 @@
       </view>
       <view class="tier-line">
         <text class="tier-dot"></text>
-        <text class="tier-line-text">{{ isPro ? '云端全量累积，换机完整恢复历史' : '免费版换机只能恢复最近 ' + cloudWindowDates + ' 天，升级后完整恢复' }}</text>
+        <text class="tier-line-text">{{ isPro ? '账号里全量累积，换机完整恢复' : '免费版换机只能恢复最近 ' + cloudWindowDates + ' 天，升级后完整恢复' }}</text>
       </view>
     </view>
   </view>

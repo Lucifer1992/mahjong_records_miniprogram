@@ -37,33 +37,33 @@ function buildMenuSections(tier: Tier, windowDates: number, isLoggedIn: boolean)
     ? {
         title: '账号',
         items: [
-          { id: 'logout', icon: '🚪', iconType: 'warning' as const, title: '退出登录', desc: '清空本地 token，下次操作需重新登录', action: 'tap' as const }
+          { id: 'logout', icon: '🚪', iconType: 'warning' as const, title: '退出登录', desc: '下次使用需重新登录', action: 'tap' as const }
         ]
       }
     : {
         title: '账号',
         items: [
-          { id: 'login', icon: '🔑', iconType: 'cloud' as const, title: '登录账号', desc: '登录后可云端同步战绩、换机恢复', action: 'tap' as const }
+          { id: 'login', icon: '🔑', iconType: 'cloud' as const, title: '登录账号', desc: '登录后战绩会自动备份，换手机不丢失', action: 'tap' as const }
         ]
       };
 
   return ([
     {
-      title: '云端同步',
+      title: '战绩备份',
       items: [
         {
           id: 'sync',
           icon: '☁️',
           iconType: 'cloud' as const,
-          title: '立即同步',
-          desc: pro ? '全量推送到云端，永久保存' : `免费版云端只留最近 ${windowDates} 个有数据的日期`,
+          title: '立即备份',
+          desc: pro ? '全部战绩永久保存' : `免费版只保留最近 ${windowDates} 天，更早的不会备份`,
           action: 'tap' as const
         },
         {
           id: 'pull',
           icon: '⬇️',
           iconType: 'success' as const,
-          title: '从云端拉取',
+          title: '下载到本机',
           desc: pro ? '换机恢复 / 多端合并' : `换机恢复（免费版仅最近 ${windowDates} 天）`,
           action: 'tap' as const
         }
@@ -118,8 +118,8 @@ function buildFreeSyncCopy(records: GameRecord[], allDates: string[], windowDate
   const dropped = records.length - kept;
 
   return dropped > 0
-    ? `将把本地 ${records.length} 条战绩（分布在 ${allDates.length} 个日期）推送到云端。\n\n免费版云端只保留最近 ${windowDates} 个有数据的日期（约 ${kept} 条），更早的 ${dropped} 条不会上云。`
-    : `将把本地 ${records.length} 条战绩推送到云端，全部保留。`;
+    ? `要把手机里的 ${records.length} 条战绩备份到账号里。\n\n免费版只保留最近 ${windowDates} 天（约 ${kept} 条），更早的 ${dropped} 条不会备份。`
+    : `要把手机里的 ${records.length} 条战绩备份到账号里，全部保留。`;
 }
 
 /**
@@ -445,7 +445,7 @@ Page({
               `我的胜率：${Math.round(s.myWinRate * 100)}%（${s.myWins}/${s.myGames}）`,
               `我的净胜分：${s.myNetScore > 0 ? '+' : ''}${s.myNetScore}`,
               '',
-              '⚠️ 仅存在本地，请勿点「立即同步」推送到云端'
+              '⚠️ 仅存在本机，请勿点「立即备份」推到账号'
             ].join('\n'),
             showCancel: false,
             confirmText: '看看效果'
@@ -501,13 +501,13 @@ Page({
     const windowDates = getFreeWindowDates();
     const allDates = Array.from(new Set(records.map(r => formatDate(r.playedAt))));
     const content = pro
-      ? `将把本地 ${records.length} 条战绩推送到云端，永久保存。`
+      ? `要把手机里的 ${records.length} 条战绩备份到账号，永久保存。`
       : buildFreeSyncCopy(records, allDates, windowDates);
 
     wx.showModal({
-      title: '立即同步',
+      title: '立即备份',
       content,
-      confirmText: '开始同步',
+      confirmText: '开始备份',
       success: async (res) => {
         if (!res.confirm) return;
 
@@ -524,12 +524,12 @@ Page({
         this.applyTier();
         this.refreshSyncStatus();
 
-        const lines = [`成功上传 ${r.pushed} 条`];
-        if (r.failed > 0) lines.push(`失败 ${r.failed} 条（已加入重试队列）`);
-        if (r.trimmed > 0) lines.push(`云端按免费额度淘汰了 ${r.trimmed} 条更早的战绩`);
+        const lines = [`成功备份 ${r.pushed} 条`];
+        if (r.failed > 0) lines.push(`${r.failed} 条失败（联网后会再试）`);
+        if (r.trimmed > 0) lines.push(`更早的 ${r.trimmed} 条没备份（免费版只保留最近几天）`);
 
         wx.showModal({
-          title: r.failed > 0 ? '同步完成（有失败）' : '同步完成',
+          title: r.failed > 0 ? '备份完成（有失败）' : '备份完成',
           content: lines.join('\n'),
           showCancel: false,
           confirmText: '好的'
@@ -539,12 +539,10 @@ Page({
   },
 
   /**
-   * 从云端拉取 —— 并集合并，绝不删本地
-   *
-   * 修复点：这个按钮以前压根没接上线，而且底层 pullAndMerge 也从不写回本地。
+   * 下载到本机 —— 把账号里的战绩拉下来，与本地合并，绝不删本地
    */
   onPull() {
-    // 拉取云端需要登录态；未登录先弹抽屉
+    // 下载需要登录态；未登录先弹抽屉
     if (!requireLogin(this)) return;
 
     const records = getRecords();
@@ -552,17 +550,17 @@ Page({
     const windowDates = getFreeWindowDates();
 
     const content = pro
-      ? '会把云端的战绩合并到本地，不会删除本地任何数据。'
-      : `会把云端的战绩合并到本地，不会删除本地任何数据。\n\n免费版云端只存了最近 ${windowDates} 个有数据的日期，所以能拉回的也仅限这些。`;
+      ? '会把账号里的战绩下载到本机，不会删除本机任何数据。'
+      : `会把账号里的战绩下载到本机，不会删除本机任何数据。\n\n免费版账号里只存了最近 ${windowDates} 天，所以能下载的也仅限这些。`;
 
     wx.showModal({
-      title: '从云端拉取',
+      title: '下载到本机',
       content,
-      confirmText: '开始拉取',
+      confirmText: '开始下载',
       success: async (res) => {
         if (!res.confirm) return;
 
-        wx.showLoading({ title: '拉取中...', mask: true });
+        wx.showLoading({ title: '下载中...', mask: true });
         const r = await pullAndMerge(records);
         wx.hideLoading();
 
@@ -575,10 +573,10 @@ Page({
         this.applyTier();
 
         wx.showModal({
-          title: '拉取完成',
+          title: '下载完成',
           content: [
-            `云端新增 ${r.pulled} 条`,
-            `本地补传 ${r.uploaded} 条`,
+            `账号新增 ${r.pulled} 条`,
+            `本机补传 ${r.uploaded} 条`,
             `当前共 ${r.total} 条战绩`
           ].join('\n'),
           showCancel: false,
@@ -612,7 +610,7 @@ Page({
   onLogout() {
     wx.showModal({
       title: '退出登录',
-      content: '退出后将清空本地登录态。\n\n· 本地战绩不受影响，仍可记录\n· 下次操作需重新登录\n· 云端战绩保留，重新登录后可继续同步',
+      content: '退出后会发生什么：\n\n· 本机的战绩还在，仍可继续记录\n· 下次操作需要重新登录\n· 账号里的战绩保留，重新登录后可继续备份',
       confirmText: '退出',
       cancelText: '取消',
       confirmColor: '#A32D2D',
@@ -637,7 +635,7 @@ Page({
     if (isPro()) {
       wx.showModal({
         title: 'Pro 权益',
-        content: '你已经是 Pro 用户。\n\n· 云端永久保存全部战绩\n· 换机后完整恢复历史\n· 不限同步天数',
+        content: '你已经是 Pro 用户：\n\n· 全部战绩永久备份\n· 换机后完整恢复历史\n· 不限备份天数',
         showCancel: false,
         confirmText: '知道了'
       });
@@ -649,7 +647,7 @@ Page({
     const confirm = await new Promise<boolean>(resolve => {
       wx.showModal({
         title: '升级 Pro 终身版',
-        content: '¥9.9 一次性付费，永久享\n\n· 云端永久保存全部战绩\n· 换机后完整恢复历史\n· 克星榜看全量\n\n付款由微信虚拟支付保障，本工具仅供娱乐记录。',
+        content: '¥9.9 一次性付费，永久享\n\n· 全部战绩永久备份\n· 换机后完整恢复历史\n· 克星榜看全量\n\n付款由微信虚拟支付保障，本工具仅供娱乐记录。',
         confirmText: '¥9.9 升级',
         cancelText: '暂不',
         success: (r) => resolve(r.confirm)

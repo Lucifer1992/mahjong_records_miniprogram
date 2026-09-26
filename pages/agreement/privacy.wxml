@@ -54,7 +54,7 @@
     <view class="agreement-section">
       <view class="section-title">2️⃣ 信息使用方式</view>
       <view class="section-content">
-        · 仅用于在你的设备本地 + 你的云端账号之间同步战绩<br/>
+        · 仅用于在你的设备本机 + 你的账号之间同步战绩<br/>
         · 用于聚合统计（如"累计场次"、"总胜率"、"福星克星"）<br/>
         · 不会用于广告投放、用户画像、数据贩卖<br/>
         · 不会与任何第三方共享你的战绩数据（法律法规要求除外）
@@ -71,18 +71,18 @@
           </view>
         </view>
         <view class="sub-item">
-          <view class="sub-title">3.2 云端备份</view>
+          <view class="sub-title">3.2 在线备份</view>
           <view class="sub-content">
-            登录后开启云端同步：数据加密存储在部署于中华人民共和国境内的服务器，
+            登录后开启战绩备份：数据加密存储在部署于中华人民共和国境内的服务器，
             通过 HTTPS（TLS 1.3）传输，使用 JWT 接口鉴权。
           </view>
         </view>
         <view class="sub-item">
           <view class="sub-title">3.3 数据生命周期</view>
           <view class="sub-content">
-            · 免费用户云端仅保留「最近 3 个有数据的日期」内的战绩（提升 Pro 不再限制）<br/>
+            · 免费用户账号里只保留「最近 3 天」的战绩（升级 Pro 不再限制）<br/>
             · 软删除：删除战绩后 30 天内可恢复，超期自动清除<br/>
-            · 账号注销：清除该账号全部云端数据，操作不可逆
+            · 账号注销：清除该账号全部数据，操作不可逆
           </view>
         </view>
       </view>
@@ -96,7 +96,7 @@
           <view class="right-item">📥 <text>导出</text>你的全部战绩（JSON 格式）</view>
           <view class="right-item">🗑️ <text>删除</text>你的全部数据（不可恢复）</view>
           <view class="right-item">👁️ <text>查看</text>我们持有的与你相关的信息</view>
-          <view class="right-item">📴 <text>注销</text>账号（同步清除云端数据）</view>
+          <view class="right-item">📴 <text>注销</text>账号（同步清除账号里的全部数据）</view>
           <view class="right-item">🛑 <text>投诉</text>：如认为我们违反法律，可向网信办等监管部门举报</view>
         </view>
       </view>

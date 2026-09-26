@@ -26,7 +26,7 @@
           <view class="bullet">· 福星克星分析（识别你的福星 / 克星玩家）</view>
           <view class="bullet">· 牌局月历（按日期追踪每日战绩）</view>
           <view class="bullet">· 战绩分享卡（小程序内生成可分享至聊天/朋友圈的卡片图片）</view>
-          <view class="bullet">· <text class="hl">登录后</text>云端同步（跨设备恢复数据）</view>
+          <view class="bullet">· <text class="hl">登录后</text>自动备份战绩（换手机不丢失）</view>
         </view>
       </view>
     </view>
@@ -76,16 +76,16 @@
           </view>
         </view>
         <view class="sub-item">
-          <view class="sub-title">· 云端同步</view>
+          <view class="sub-title">· 战绩备份</view>
           <view class="sub-content">
-            免费用户云端仅保留「最近 3 个有数据的日期」；Pro 用户不受此限制。
+            免费用户账号里只保留「最近 3 天」的战绩；Pro 用户不受此限制。
           </view>
         </view>
         <view class="sub-item">
           <view class="sub-title">· Pro 等级（可选付费）</view>
           <view class="sub-content">
             我们提供 Pro 终身一档：<text class="hl">¥9.9 一次性付费</text>，按微信虚拟支付计费。
-            升级后享：克星榜全量、云端保留全量、后续新增 Pro 功能。
+            升级后享：克星榜看全量、战绩永久备份、后续新增 Pro 功能。
             虚拟支付遵循微信官方规则，订单不可退换。
           </view>
         </view>
@@ -112,7 +112,7 @@
         <view class="disclaimer-list">
           <view class="disc-item">· 服务按"现状"提供，不承诺无中断、无错误</view>
           <view class="disc-item">· 因不可抗力（不能预见、不能避免、不能克服的客观情况）导致的服务中断，不承担责任</view>
-          <view class="disc-item">· 你录入的数据应自行做好本地备份；我们不对因账号注销、误操作、设备丢失等导致的云端数据丢失承担赔偿责任</view>
+          <view class="disc-item">· 你录入的数据应自行做好本机备份；我们不对因账号注销、误操作、设备丢失等导致的账号数据丢失承担赔偿责任</view>
           <view class="disc-item">· 不对使用本服务产生的任何间接损失承担责任</view>
           <view class="disc-item">· 你应遵守当地法律法规；与赌博相关的使用风险及法律后果完全自担</view>
         </view>
