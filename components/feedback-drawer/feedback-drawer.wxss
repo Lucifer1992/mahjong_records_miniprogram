@@ -1,0 +1,125 @@
+/* components/feedback-drawer/feedback-drawer.wxss */
+/* 与 login-drawer 共用遮罩 + 抽屉基础样式 */
+
+.drawer-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-out;
+}
+.drawer-mask.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer-panel {
+  position: relative;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 56rpx 56rpx calc(env(safe-area-inset-bottom) + 40rpx);
+  box-sizing: border-box;
+  transform: translateY(100%);
+  transition: transform 0.24s ease-out;
+}
+.drawer-mask.is-visible .drawer-panel {
+  transform: translateY(0);
+}
+
+.drawer-panel-feedback {
+  padding-top: 48rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 28rpx);
+}
+
+.drawer-close {
+  position: absolute;
+  top: 24rpx;
+  right: 28rpx;
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #9B9A93;
+}
+
+.drawer-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1F1E1B;
+  text-align: center;
+}
+
+.drawer-sub {
+  margin-top: 8rpx;
+  margin-bottom: 32rpx;
+  font-size: 24rpx;
+  color: #9B9A93;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.feedback-textarea {
+  width: 100%;
+  min-height: 240rpx;
+  padding: 24rpx 28rpx;
+  box-sizing: border-box;
+  background: #F7F5F0;
+  border-radius: 20rpx;
+  font-size: 28rpx;
+  color: #1F1E1B;
+  line-height: 1.6;
+}
+
+.feedback-placeholder {
+  color: #B4B2A9;
+}
+
+.feedback-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12rpx;
+  margin-bottom: 28rpx;
+}
+
+.feedback-counter {
+  font-size: 22rpx;
+  color: #9B9A93;
+}
+
+.drawer-btn {
+  width: 100%;
+  height: 92rpx;
+  line-height: 92rpx;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  text-align: center;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.drawer-btn::after { border: none; }
+
+.drawer-btn-primary {
+  background: var(--color-primary, #4A9D7E);
+  color: #FFFFFF;
+}
+.drawer-btn-primary.is-loading,
+.drawer-btn-primary[disabled] {
+  background: #B4B2A9;
+  color: #FFFFFF;
+}
+
+.feedback-tip {
+  margin-top: 20rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #9B9A93;
+}

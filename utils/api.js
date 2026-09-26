@@ -216,3 +216,16 @@ export function healthCheck() {
         silent: true
     });
 }
+/**
+ * 提交意见反馈（必须登录；后端只存文本 + user_id，不收集手机号等敏感信息）
+ * - 内容 5-500 字
+ * - 每天同用户最多 5 条
+ */
+export function submitFeedback(content) {
+    return request({
+        url: '/api/feedback',
+        method: 'POST',
+        data: { content },
+        showError: false // 错误由调用方按业务码提示（避免一刀切 toast）
+    });
+}

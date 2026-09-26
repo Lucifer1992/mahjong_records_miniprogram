@@ -1,0 +1,38 @@
+<!-- components/feedback-drawer/feedback-drawer.wxml -->
+<!--
+  意见反馈抽屉：半屏浮层 + textarea + 字数计数 + 提交按钮
+  不收集任何手机号/姓名/IP 等敏感信息；必须登录才能提交（未登录 → 弹登录抽屉）
+-->
+<view class="drawer-mask {{ visible ? 'is-visible' : '' }}" bindtap="onMaskTap">
+  <view class="drawer-panel drawer-panel-feedback" catchtap="noop">
+    <view class="drawer-close" bindtap="requestClose">✕</view>
+
+    <view class="drawer-title">意见反馈</view>
+    <view class="drawer-sub">
+      我们会认真看每一条建议，不会收集手机号等敏感信息
+    </view>
+
+    <textarea class="feedback-textarea"
+              placeholder="写下你想说的问题、建议或吐槽…"
+              placeholder-class="feedback-placeholder"
+              value="{{ content }}"
+              maxlength="{{ maxLength }}"
+              auto-height
+              bindinput="onInput"
+              disabled="{{ submitting }}" />
+
+    <view class="feedback-foot">
+      <text class="feedback-counter">{{ content.length }}/{{ maxLength }}</text>
+    </view>
+
+    <button class="drawer-btn drawer-btn-primary {{ submitting ? 'is-loading' : '' }}"
+            bindtap="onSubmit"
+            disabled="{{ submitting || !canSubmit }}">
+      {{ submitting ? '提交中…' : '提交反馈' }}
+    </button>
+
+    <view class="feedback-tip">
+      同一账号每天最多提交 5 条
+    </view>
+  </view>
+</view>

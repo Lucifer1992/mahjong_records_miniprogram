@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "我的",
-  "usingComponents": {}
+  "usingComponents": {
+    "login-drawer": "/components/login-drawer/login-drawer",
+    "feedback-drawer": "/components/feedback-drawer/feedback-drawer"
+  }
 }

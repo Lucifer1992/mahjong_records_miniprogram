@@ -88,7 +88,7 @@ function buildMenuSections(tier: Tier, windowDates: number, isLoggedIn: boolean)
         { id: 'about', icon: 'ℹ️', iconType: 'info' as const, title: '关于雀战录', desc: '版本 1.0.0 · 2026-09-11', action: 'navigate' as const },
         { id: 'privacy', icon: '🔒', iconType: 'cloud' as const, title: '隐私政策', desc: '了解我们如何保护你的数据', action: 'navigate' as const },
         { id: 'terms', icon: '📜', iconType: 'info' as const, title: '用户协议', desc: '使用条款与免责说明', action: 'navigate' as const },
-        { id: 'feedback', icon: '💬', iconType: 'bell' as const, title: '意见反馈', desc: '通过微信客服反馈', action: 'tap' as const }
+        { id: 'feedback', icon: '💬', iconType: 'bell' as const, title: '意见反馈', desc: '在这里写下你的建议', action: 'tap' as const }
       ]
     },
     {
@@ -177,6 +177,15 @@ Page({
     this.refreshSyncStatus();
     this.refreshTierAsync();
     this.refreshAccountAsync();
+
+    // 用户点「意见反馈」时未登录 → 登录抽屉刚关闭 → 自动续开反馈抽屉
+    // 用 setTimeout 等登录抽屉的关闭动画走完，避免叠层闪烁
+    if ((this as any).pendingFeedbackAfterLogin) {
+      setTimeout(() => {
+        (this as any).pendingFeedbackAfterLogin = false;
+        (this as any).selectComponent?.('#feedbackDrawer')?.show?.();
+      }, 350);
+    }
   },
 
   /**
@@ -603,6 +612,34 @@ Page({
     (this as any).selectComponent?.('#loginDrawer')?.show?.();
   },
 
+  // ========== 意见反馈 ==========
+
+  /** 待用户登录后，是否要自动重新打开反馈抽屉 */
+  pendingFeedbackAfterLogin: false,
+
+  /**
+   * 打开意见反馈抽屉
+   * 必须登录 → 未登录先弹登录抽屉，登录成功后再开
+   */
+  onFeedback() {
+    if (!requireLogin(this)) {
+      // requireLogin 已弹登录抽屉；登录成功（onLoggedIn）后会再次打开
+      this.pendingFeedbackAfterLogin = true;
+      return;
+    }
+    (this as any).selectComponent?.('#feedbackDrawer')?.show?.();
+  },
+
+  /** 反馈抽屉关闭（用户主动关） */
+  onFeedbackClose() {
+    this.pendingFeedbackAfterLogin = false;
+  },
+
+  /** 反馈提交成功（toast 由 drawer 自己弹，这里仅清理状态） */
+  onFeedbackSuccess() {
+    this.pendingFeedbackAfterLogin = false;
+  },
+
   /**
    * 退出登录：清掉本地 token + tier 缓存，但不删本地战绩。
    * 云端数据保留（用户重新登录可恢复）。
@@ -843,12 +880,7 @@ Page({
         });
         break;
       case 'feedback':
-        wx.showModal({
-          title: '意见反馈',
-          content: '请通过以下方式反馈：\n\n微信搜索公众号「雀战录」\n或添加作者微信：your-wechat-id\n\n你的反馈会让我们变得更好 🙏',
-          showCancel: false,
-          confirmText: '知道了'
-        });
+        this.onFeedback();
         break;
       case 'privacy':
         wx.navigateTo({ url: '/pages/agreement/privacy' });

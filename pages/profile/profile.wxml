@@ -133,3 +133,4 @@
 </view>
 <!-- 登录抽屉（未登录时由 utils/auth 弹出；登录成功回调刷新页面数据） -->
 <login-drawer id="loginDrawer" bind:loggedin="onLoggedIn" />
+<feedback-drawer id="feedbackDrawer" bind:close="onFeedbackClose" bind:success="onFeedbackSuccess" />
