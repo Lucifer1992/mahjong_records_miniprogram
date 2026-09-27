@@ -85,6 +85,8 @@ export interface Player {
   id: string;
   nickname: string;
   color: string;
+  /** 卡通头像索引 1-20，undefined 时按 color 哈希回退 */
+  avatarIdx?: number;
   createdAt: number;
   totalGames: number;
   totalScore: number;

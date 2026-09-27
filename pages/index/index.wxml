@@ -109,8 +109,8 @@
     <view class="table-wrap" catchtap="onCancelDrag">
       <image class="table-bg" src="/assets/mahjong-table.jpg" mode="aspectFill"></image>
 
-      <!-- 中心：本局总分 + 第几局 -->
-      <view wx:if="{{ players.length >= 2 }}" class="table-center">
+      <!-- 中心：本局总分 + 第几局（仅在有人开始计分时显示，开局前空着让玩家能看清四向头像） -->
+      <view wx:if="{{ players.length >= 2 && hasAnyScore }}" class="table-center">
         <view class="center-round-num">第 {{ dailyStats.games + 1 }} 局</view>
         <view class="center-round-score">
           <text wx:if="{{ totalScore >= 0 }}">+{{ totalScore }}</text>
@@ -124,89 +124,85 @@
 
       <!-- 北（上） -->
       <view wx:if="{{ seats.north }}" class="seat seat-north {{ dragSource === 'north' ? 'seat-dragging' : (dragSource && dragSource !== 'north' ? 'seat-drop-target' : '') }}">
-        <view class="seat-pos-label">北</view>
+        <view class="seat-pos-label pos-north">北</view>
         <view class="seat-avatar {{ seats.north.isEvil ? 'seat-avatar-evil' : '' }}"
               data-seat="north"
               bindtap="onTapSeat"
               bindlongpress="onLongPressSeat"
               catchtouchend="onTapSeat">
-          {{ seats.north.nickname[0] }}
+          <image class="seat-avatar-img" src="/assets/avatars/avatar-{{ seats.north.avatarIdx < 10 ? '0' : '' }}{{ seats.north.avatarIdx }}.png" mode="aspectFill" />
         </view>
         <view wx:if="{{ seats.north.score > 0 || seats.north.score < 0 }}" class="seat-score {{ seats.north.score < 0 ? 'is-neg' : '' }}">
           <text wx:if="{{ seats.north.score > 0 }}">+{{ seats.north.score }}</text>
           <text wx:else>{{ seats.north.score }}</text>
         </view>
         <view wx:if="{{ seats.north.isEvil }}" class="seat-evil-tag">克星</view>
-        <view class="seat-plus" data-seat="north" catchtap="onTapSeatPlus">+</view>
       </view>
       <view wx:else class="seat seat-north seat-empty" data-seat="north" bindtap="onTapEmptySeat">
-        <view class="seat-pos-label">北</view>
+        <view class="seat-pos-label pos-north">北</view>
         <view class="seat-avatar-empty">+</view>
       </view>
 
-      <!-- 东（右） -->
-      <view wx:if="{{ seats.east }}" class="seat seat-east {{ dragSource === 'east' ? 'seat-dragging' : (dragSource && dragSource !== 'east' ? 'seat-drop-target' : '') }}">
-        <view class="seat-pos-label seat-pos-right">东</view>
+      <!-- 东（右）：label 在右侧 -->
+      <view wx:if="{{ seats.east }}" class="seat seat-east-row {{ dragSource === 'east' ? 'seat-dragging' : (dragSource && dragSource !== 'east' ? 'seat-drop-target' : '') }}">
         <view class="seat-avatar {{ seats.east.isEvil ? 'seat-avatar-evil' : '' }}"
               data-seat="east"
               bindtap="onTapSeat"
               bindlongpress="onLongPressSeat"
               catchtouchend="onTapSeat">
-          {{ seats.east.nickname[0] }}
+          <image class="seat-avatar-img" src="/assets/avatars/avatar-{{ seats.east.avatarIdx < 10 ? '0' : '' }}{{ seats.east.avatarIdx }}.png" mode="aspectFill" />
         </view>
+        <view class="seat-pos-label pos-east">东</view>
         <view wx:if="{{ seats.east.score > 0 || seats.east.score < 0 }}" class="seat-score {{ seats.east.score < 0 ? 'is-neg' : '' }}">
           <text wx:if="{{ seats.east.score > 0 }}">+{{ seats.east.score }}</text>
           <text wx:else>{{ seats.east.score }}</text>
         </view>
         <view wx:if="{{ seats.east.isEvil }}" class="seat-evil-tag">克星</view>
-        <view class="seat-plus" data-seat="east" catchtap="onTapSeatPlus">+</view>
       </view>
-      <view wx:else class="seat seat-east seat-empty" data-seat="east" bindtap="onTapEmptySeat">
-        <view class="seat-pos-label seat-pos-right">东</view>
+      <view wx:else class="seat seat-east-row seat-empty" data-seat="east" bindtap="onTapEmptySeat">
         <view class="seat-avatar-empty">+</view>
+        <view class="seat-pos-label pos-east">东</view>
       </view>
 
-      <!-- 南（下） -->
-      <view wx:if="{{ seats.south }}" class="seat seat-south {{ dragSource === 'south' ? 'seat-dragging' : (dragSource && dragSource !== 'south' ? 'seat-drop-target' : '') }}">
-        <view class="seat-pos-label">南</view>
+      <!-- 南（下）：label 在下方 -->
+      <view wx:if="{{ seats.south }}" class="seat seat-south-col {{ dragSource === 'south' ? 'seat-dragging' : (dragSource && dragSource !== 'south' ? 'seat-drop-target' : '') }}">
         <view class="seat-avatar {{ seats.south.isEvil ? 'seat-avatar-evil' : '' }}"
               data-seat="south"
               bindtap="onTapSeat"
               bindlongpress="onLongPressSeat"
               catchtouchend="onTapSeat">
-          {{ seats.south.nickname[0] }}
+          <image class="seat-avatar-img" src="/assets/avatars/avatar-{{ seats.south.avatarIdx < 10 ? '0' : '' }}{{ seats.south.avatarIdx }}.png" mode="aspectFill" />
         </view>
+        <view class="seat-pos-label pos-south">南</view>
         <view wx:if="{{ seats.south.score > 0 || seats.south.score < 0 }}" class="seat-score {{ seats.south.score < 0 ? 'is-neg' : '' }}">
           <text wx:if="{{ seats.south.score > 0 }}">+{{ seats.south.score }}</text>
           <text wx:else>{{ seats.south.score }}</text>
         </view>
         <view wx:if="{{ seats.south.isEvil }}" class="seat-evil-tag">克星</view>
-        <view class="seat-plus" data-seat="south" catchtap="onTapSeatPlus">+</view>
       </view>
-      <view wx:else class="seat seat-south seat-empty" data-seat="south" bindtap="onTapEmptySeat">
-        <view class="seat-pos-label">南</view>
+      <view wx:else class="seat seat-south-col seat-empty" data-seat="south" bindtap="onTapEmptySeat">
         <view class="seat-avatar-empty">+</view>
+        <view class="seat-pos-label pos-south">南</view>
       </view>
 
-      <!-- 西（左） -->
-      <view wx:if="{{ seats.west }}" class="seat seat-west {{ dragSource === 'west' ? 'seat-dragging' : (dragSource && dragSource !== 'west' ? 'seat-drop-target' : '') }}">
-        <view class="seat-pos-label seat-pos-left">西</view>
+      <!-- 西（左）：label 在左侧 -->
+      <view wx:if="{{ seats.west }}" class="seat seat-west-row {{ dragSource === 'west' ? 'seat-dragging' : (dragSource && dragSource !== 'west' ? 'seat-drop-target' : '') }}">
+        <view class="seat-pos-label pos-west">西</view>
         <view class="seat-avatar {{ seats.west.isEvil ? 'seat-avatar-evil' : '' }}"
               data-seat="west"
               bindtap="onTapSeat"
               bindlongpress="onLongPressSeat"
               catchtouchend="onTapSeat">
-          {{ seats.west.nickname[0] }}
+          <image class="seat-avatar-img" src="/assets/avatars/avatar-{{ seats.west.avatarIdx < 10 ? '0' : '' }}{{ seats.west.avatarIdx }}.png" mode="aspectFill" />
         </view>
         <view wx:if="{{ seats.west.score > 0 || seats.west.score < 0 }}" class="seat-score {{ seats.west.score < 0 ? 'is-neg' : '' }}">
           <text wx:if="{{ seats.west.score > 0 }}">+{{ seats.west.score }}</text>
           <text wx:else>{{ seats.west.score }}</text>
         </view>
         <view wx:if="{{ seats.west.isEvil }}" class="seat-evil-tag">克星</view>
-        <view class="seat-plus" data-seat="west" catchtap="onTapSeatPlus">+</view>
       </view>
-      <view wx:else class="seat seat-west seat-empty" data-seat="west" bindtap="onTapEmptySeat">
-        <view class="seat-pos-label seat-pos-left">西</view>
+      <view wx:else class="seat seat-west-row seat-empty" data-seat="west" bindtap="onTapEmptySeat">
+        <view class="seat-pos-label pos-west">西</view>
         <view class="seat-avatar-empty">+</view>
       </view>
     </view>
@@ -229,6 +225,21 @@
         <text class="add-btn-icon">+</text>
         <text>添加</text>
       </view>
+    </view>
+
+    <!-- 头像选择器（输入昵称后显示） -->
+    <view wx:if="{{ newPlayerName }}" class="avatar-picker">
+      <view class="avatar-picker-label">选头像</view>
+      <scroll-view scroll-x class="avatar-picker-scroll">
+        <view class="avatar-picker-list">
+          <view wx:for="{{ avatarOptions }}" wx:key="index"
+                class="avatar-picker-item {{ (selectedAvatarIdx || suggestedAvatarIdx) === index + 1 ? 'is-selected' : '' }}"
+                data-idx="{{ index + 1 }}"
+                catchtap="onSelectAvatar">
+            <image src="{{ item }}" mode="aspectFill" />
+          </view>
+        </view>
+      </scroll-view>
     </view>
 
     <view wx:if="{{ players.length === 0 }}" class="player-empty-tip">
@@ -297,19 +308,25 @@
   </view>
 </view>
 
-<!-- ===== 中央计分弹窗（C 方案） ===== -->
-<view wx:if="{{ showScoreModal }}" class="modal-mask" bindtap="onCloseScoreModal">
+<!-- ===== 中央计分弹窗（C 方案：关闭只点 X，禁止蒙层点击关闭） ===== -->
+<view wx:if="{{ showScoreModal }}" class="modal-mask">
   <view class="modal" catchtap="">
     <view class="modal-header">
-      <view class="modal-title">本局计分</view>
+      <view class="modal-title">
+        正在编辑 <text class="modal-title-name">{{ activePlayerNickname || '' }}</text>
+      </view>
       <view class="modal-close" catchtap="onCloseScoreModal">✕</view>
     </view>
 
     <view class="modal-body">
       <view wx:for="{{ modalSeats }}" wx:key="seat"
-            class="modal-row">
+            class="modal-row {{ item.seat === modalActiveSeat ? 'is-active' : '' }}"
+            data-seat="{{ item.seat }}"
+            catchtap="onModalSelectSeat">
         <view class="modal-row-pos">{{ item.seatLabel }}</view>
-        <view class="modal-row-avatar {{ item.isEvil ? 'is-evil' : '' }}">{{ item.nickname[0] }}</view>
+        <view class="modal-row-avatar {{ item.isEvil ? 'is-evil' : '' }}">
+          <image class="modal-avatar-img" src="/assets/avatars/avatar-{{ item.avatarIdx < 10 ? '0' : '' }}{{ item.avatarIdx }}.png" mode="aspectFill" />
+        </view>
         <view class="modal-row-info">
           <view class="modal-row-name">{{ item.nickname }}</view>
           <view wx:if="{{ item.isEvil }}" class="modal-row-evil">克星</view>
@@ -354,6 +371,22 @@
   </view>
 </view>
 
+<!-- 头像快捷分数小菜单（长按头像 + 按钮触发；点选即生效） -->
+<view wx:if="{{ quickScoreMenuSeat }}" class="quick-menu-mask" catchtap="onCloseQuickScoreMenu">
+  <view class="quick-menu" catchtap="">
+    <view class="quick-menu-title">快速加减（带符号）</view>
+    <view class="quick-menu-grid">
+      <view class="quick-menu-btn is-neg" data-value="-10" catchtap="onQuickScoreMenuPick">−10</view>
+      <view class="quick-menu-btn is-neg" data-value="-5" catchtap="onQuickScoreMenuPick">−5</view>
+      <view class="quick-menu-btn" data-value="5" catchtap="onQuickScoreMenuPick">+5</view>
+      <view class="quick-menu-btn" data-value="10" catchtap="onQuickScoreMenuPick">+10</view>
+      <view class="quick-menu-btn" data-value="20" catchtap="onQuickScoreMenuPick">+20</view>
+      <view class="quick-menu-btn is-neg" data-value="-20" catchtap="onQuickScoreMenuPick">−20</view>
+    </view>
+    <view class="quick-menu-cancel" catchtap="onCloseQuickScoreMenu">取消</view>
+  </view>
+</view>
+
 <!-- 历史牌友抽屉（多选：勾多位 → 底部「加入本局」一次性加入） -->
 <view class="recent-mask {{ showRecentPlayers ? 'is-visible' : '' }}"
       bindtap="onCloseRecentPlayers"
@@ -377,17 +410,27 @@
     </scroll-view>
 
     <scroll-view scroll-y class="recent-scroll">
+      <!-- + 我 快捷按钮 -->
+      <view wx:if="{{ showAddMe }}" class="recent-add-me-btn" catchtap="onAddMe">＋ 我</view>
+
       <view wx:for="{{ recentPlayers }}" wx:key="id"
             class="recent-row {{ item.inGame ? 'recent-row-ingame' : '' }}"
             data-index="{{ index }}"
             catchtap="onToggleRecentPlayer"
             bindlongpress="onLongPressRecentPlayer"
             hover-class="recent-row-hover">
-        <view class="recent-avatar avatar-grad-{{ (index % 8) + 1 }}">
-          {{ item.nickname[0] }}
+        <view class="recent-avatar-wrap">
+          <image class="recent-avatar-img" src="/assets/avatars/avatar-{{ item.avatarIdx >= 1 && item.avatarIdx <= 20 ? (item.avatarIdx < 10 ? '0' : '') + item.avatarIdx : '01' }}.png"
+                 mode="aspectFill" />
         </view>
         <view class="recent-info">
-          <view class="recent-name">{{ item.nickname }}</view>
+          <view class="recent-name-row">
+            <view class="recent-name">{{ item.nickname }}</view>
+            <view wx:if="{{ item.nextSeat != null && item.checked && !item.inGame }}"
+                  class="recent-seat-badge seat-{{ item.nextSeat }}">
+              {{ item.nextSeat === 'east' ? '东' : item.nextSeat === 'south' ? '南' : item.nextSeat === 'west' ? '西' : '北' }}
+            </view>
+          </view>
           <view class="recent-meta">
             <text wx:if="{{ item.usage > 0 }}">打过 {{ item.usage }} 局</text>
             <text wx:else>未参战（仅档案）</text>
@@ -407,6 +450,23 @@
           catchtap="onConfirmAddRecent">
       <text wx:if="{{ recentCheckedCount > 0 }}">入座牌桌 ({{ recentCheckedCount }})</text>
       <text wx:else>勾选牌友后入座</text>
+    </view>
+  </view>
+</view>
+
+<!-- 更换头像弹层（长按历史牌友触发；点选即生效） -->
+<view wx:if="{{ showAvatarEditor }}" class="avatar-editor-mask" bindtap="onCloseAvatarEditor">
+  <view class="avatar-editor" catchtap="">
+    <view class="avatar-editor-close" catchtap="onCloseAvatarEditor">✕</view>
+    <view class="avatar-editor-title">更换头像</view>
+    <view class="avatar-editor-sub">{{ avatarEditorName }}</view>
+    <view class="avatar-editor-grid">
+      <view wx:for="{{ avatarOptions }}" wx:key="index"
+            class="avatar-editor-cell {{ avatarEditorIdx === index + 1 ? 'is-current' : '' }}"
+            data-idx="{{ index + 1 }}"
+            catchtap="onAvatarEditorPick">
+        <image src="{{ item }}" mode="aspectFill" />
+      </view>
     </view>
   </view>
 </view>

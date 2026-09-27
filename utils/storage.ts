@@ -143,6 +143,31 @@ export function deletePlayer(id: string): { ok: boolean; message: string; player
   return { ok: true, message: target.nickname, players: next };
 }
 
+/**
+ * 更新玩家头像（写入档案，牌桌/弹窗/历史牌友抽屉都会跟着变）。
+ * 「我」也允许换头像。
+ */
+export function updatePlayerAvatar(id: string, avatarIdx: number): Player | null {
+  const players = getPlayers();
+  const target = players.find(p => p.id === id);
+  if (!target) return null;
+  target.avatarIdx = Math.min(20, Math.max(1, avatarIdx));
+  setPlayers(players);
+  return target;
+}
+
+/**
+ * 建议一个默认头像索引：优先取没有被现有牌友占用的（保证牌桌上不撞脸），
+ * 20 个全被占用时按牌友数量轮转兜底。
+ */
+export function suggestAvatarIdx(players: Player[]): number {
+  const used = new Set(players.map(p => p.avatarIdx).filter(Boolean));
+  for (let i = 1; i <= 20; i++) {
+    if (!used.has(i)) return i;
+  }
+  return (players.length % 20) + 1;
+}
+
 export function findOrCreatePlayer(nickname: string): Player {
   const players = getPlayers();
   let player = players.find(p => p.nickname === nickname);
@@ -151,6 +176,7 @@ export function findOrCreatePlayer(nickname: string): Player {
       id: uuid(),
       nickname,
       color: PLAYER_COLORS[players.length % PLAYER_COLORS.length],
+      avatarIdx: suggestAvatarIdx(players),
       createdAt: Date.now(),
       totalGames: 0,
       totalScore: 0,

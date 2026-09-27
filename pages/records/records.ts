@@ -10,7 +10,7 @@ import { adEnabled, adUnitId } from '../../utils/ads';
 import { isPro } from '../../utils/tier';
 import { calcOverallStats, calcRuleStats, filterRecordsByRule, OverallStats, RuleStat } from '../../utils/stats';
 import { formatDateShort, formatDateTime, relativeTime } from '../../utils/date';
-import { enqueueDelete } from '../../utils/sync';
+import { enqueueDelete, tryAutoSync } from '../../utils/sync';
 
 interface RecordItem {
   id: string;
@@ -229,6 +229,8 @@ Page({
             success: (modal) => {
               if (modal.confirm) {
                 deleteRecord(id);
+                enqueueDelete(id);          // 进待删除队列，下次同步时删云端对应记录
+                tryAutoSync(getRecords());  // 立即触发一次同步，尽快删除云端
                 this.loadData();
                 wx.showToast({ title: '已删除', icon: 'success' });
               }

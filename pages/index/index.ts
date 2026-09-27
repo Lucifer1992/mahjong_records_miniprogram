@@ -22,9 +22,16 @@ import {
   MIN_PLAYERS,
   MAX_PLAYERS
 } from '../../utils/constants';
+
+/** 预设卡通头像列表（assets/avatars/avatar-XX.png，1-20）*/
+export const AVATAR_OPTIONS = Array.from({ length: 20 }, (_, i) =>
+  `/assets/avatars/avatar-${String(i + 1).padStart(2, '0')}.png`
+);
 import {
   addRecord,
   findOrCreatePlayer,
+  suggestAvatarIdx,
+  updatePlayerAvatar,
   getPlayers,
   getRecords,
   ensureMe,
@@ -44,6 +51,13 @@ import { formatDateShort, formatDateTime } from '../../utils/date';
 import { enqueuePush, tryAutoSync } from '../../utils/sync';
 import { calcSelfWinRate, calcDailySession } from '../../utils/stats';
 
+/** 统一取头像索引：优先用 stored avatarIdx，否则用昵称哈希，保证 1-20 */
+function playerAvatarIdx(p: { nickname: string; avatarIdx?: number }): number {
+  if (p.avatarIdx && p.avatarIdx >= 1 && p.avatarIdx <= 20) return p.avatarIdx;
+  const h = p.nickname.charCodeAt(0) + (p.nickname.charCodeAt(1) || 0);
+  return (h % 20) + 1;
+}
+
 interface DraftPlayer extends PlayerScore {
   color: string;
   avatarIdx: number;
@@ -57,6 +71,7 @@ interface RecentPlayer extends Player {
   usage: number;
   inGame: boolean;
   checked: boolean;
+  nextSeat: Seat | null;
 }
 
 /** 牌桌上某个座位的视图模型（按 seat 索引） */
@@ -69,6 +84,7 @@ interface SeatView {
   scoreText: string;
   negative: boolean;
   isEvil: boolean;
+  avatarIdx: number;
 }
 
 /** 弹窗内的 4 行座位视图 */
@@ -98,12 +114,23 @@ Page({
     players: [] as DraftPlayer[],
     newPlayerName: '',
     showAddMe: false,
+    selectedAvatarIdx: 0,   // 用户显式选择的头像索引（0 = 未选择，跟随系统建议）
+    suggestedAvatarIdx: 1,  // 系统建议的默认头像（自动避开已有牌友占用的）
+    avatarOptions: AVATAR_OPTIONS,
+
+    // ===== 更换头像弹层（长按历史牌友触发）=====
+    showAvatarEditor: false,
+    avatarEditorPlayerId: '',
+    avatarEditorName: '',
+    avatarEditorIdx: 1,     // 弹层内当前高亮的头像（打开时 = 该玩家现有头像）
 
     // ===== 历史牌友（保持原样）=====
     recentPlayers: [] as RecentPlayer[],
     showRecentPlayers: false,
     recentLineups: [] as Lineup[],
     recentCheckedCount: 0,
+    recentCheckedOrder: [] as string[],   // 用户勾选顺序（用于入座时按东→南→西→北排）
+    pendingFillSeat: null as Seat | null, // 点空白座位时记录目标座，点完历史牌友直接入座这里
 
     // ===== 牌桌视图模型：4 方位按 seat 索引 =====
     seats: {
@@ -127,10 +154,15 @@ Page({
     // ===== 计分弹窗（C 方案：中央弹窗 + 背景蒙层）=====
     showScoreModal: false,
     modalSeats: [] as ModalSeatView[],
+    modalActiveSeat: null as Seat | null,   // 当前选中的座位（快捷分数生效在此人）
+    activePlayerNickname: '',               // 弹窗标题里高亮的玩家昵称
 
     // ===== 拖拽换位：长按 0.5s 抬起 → 点其他位置互换 =====
     dragSource: null as Seat | null,
     dragTimer: 0,
+
+    // ===== 牌桌中央筹码环：开局前隐藏，只在有人开始计分时显示 =====
+    hasAnyScore: false,
 
     // ===== 备注 =====
     note: '',
@@ -262,7 +294,8 @@ Page({
         score: p.score,
         scoreText: p.scoreText,
         negative: p.negative,
-        isEvil: evilIds.has(p.playerId)
+        isEvil: evilIds.has(p.playerId),
+        avatarIdx: p.avatarIdx
       };
     }
 
@@ -402,7 +435,7 @@ Page({
 
     const sorted = [...allPlayers].sort((a, b) => b.createdAt - a.createdAt);
     const withUsage = sorted
-      .map(p => ({ ...p, usage: usage.get(p.nickname) || 0, inGame: false, checked: false } as RecentPlayer))
+      .map(p => ({ ...p, usage: usage.get(p.nickname) || 0, inGame: false, checked: false, nextSeat: null } as RecentPlayer))
       .filter((p, i) => p.usage > 0 || i < 20)
       .sort((a, b) => b.usage - a.usage || b.createdAt - a.createdAt)
       .slice(0, 30);
@@ -410,6 +443,7 @@ Page({
     const inGameIds = new Set(this.data.players.map(p => p.playerId));
     const list = withUsage.map(p => ({
       ...p,
+      avatarIdx: playerAvatarIdx(p),
       inGame: inGameIds.has(p.id),
       checked: inGameIds.has(p.id)
     }));
@@ -419,14 +453,78 @@ Page({
       recentLineups: getRecentLineups(records),
       recentCheckedCount: 0
     });
+    // 根据初始状态（无勾选）计算 nextSeat 预告
+    this.computeNextSeats();
+  },
+
+  /** 根据当前 checked 状态，为每个玩家计算 nextSeat 预告（不修改 checked） */
+  computeNextSeats() {
+    const list = this.data.recentPlayers;
+    let totalNew = 0; // 已勾选（不在游戏中）的玩家数量
+    for (const p of list) {
+      if (p.inGame) {
+        (p as RecentPlayer).nextSeat = null;
+      } else {
+        if (p.checked) {
+          (p as RecentPlayer).nextSeat = SEAT_ORDER[totalNew] ?? null;
+          totalNew++;
+        } else {
+          (p as RecentPlayer).nextSeat = SEAT_ORDER[totalNew] ?? null;
+        }
+      }
+    }
+    this.setData({ recentPlayers: list });
   },
 
   setRecentChecked(ids: string[]) {
     const set = new Set(ids);
+    // 先算 checked 状态
     const list = this.data.recentPlayers.map(p => ({
       ...p,
       checked: p.inGame || set.has(p.id)
     }));
+    // 同步维护勾选顺序：
+    //   入座时按「先勾的坐东、后勾的坐南…」而非按牌友列表排序
+    //   ids 由调用方按用户点选的顺序传入；inGame 玩家排除（不参与入座）
+    const inGameIds = new Set(this.data.recentPlayers.filter(p => p.inGame).map(p => p.id));
+    const order = ids.filter(id => !inGameIds.has(id));
+    this.setData({ recentCheckedOrder: order });
+
+    // 再为每个玩家计算 nextSeat：
+    //   按 SEAT_ORDER（东→南→西→北）走，已 inGame 的占固定方位，其余方位按 recentCheckedOrder 顺次填
+    //   所以下一个新玩家占的是「第一个空着」的方位，而不是从 0 重新累加
+    const inGameSeats = new Set(list.filter(p => p.inGame).map(p => p.seat));
+    const orderIndex = new Map<string, number>();
+    this.data.recentCheckedOrder.forEach((id, i) => orderIndex.set(id, i));
+
+    // 按 SEAT_ORDER 把 inGame 玩家放回各自座位，再按 recentCheckedOrder 把勾选的顺次填剩下的空位
+    const seatFill: (RecentPlayer | null)[] = new Array(4).fill(null);
+    // 第一遍：放 inGame
+    list.filter(p => p.inGame).forEach(p => {
+      if (p.seat) seatFill[SEAT_ORDER.indexOf(p.seat)] = p;
+    });
+    // 第二遍：按勾选顺序填剩下的空位
+    const slots = list.filter(p => !p.inGame && p.checked)
+      .sort((a, b) => (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0));
+    let slotIdx = 0;
+    for (let i = 0; i < 4; i++) {
+      if (!seatFill[i]) {
+        seatFill[i] = slots[slotIdx++] ?? null;
+      }
+    }
+    // 现在 seatFill[0..3] 是该方位"占位的玩家"；对每个 recent player，找它占的方位
+    const seatOfPlayer = new Map<string, Seat>();
+    seatFill.forEach((p, i) => {
+      if (p) seatOfPlayer.set(p.id, SEAT_ORDER[i]);
+    });
+
+    for (const p of list) {
+      if (p.inGame) {
+        (p as any).nextSeat = null; // 已在牌桌上不显示预告
+      } else {
+        (p as any).nextSeat = seatOfPlayer.get(p.id) ?? null;
+      }
+    }
     this.setData({
       recentPlayers: list,
       recentCheckedCount: list.filter(p => p.checked && !p.inGame).length
@@ -443,7 +541,8 @@ Page({
       return;
     }
     this.refreshRecentPlayers();
-    this.setData({ showRecentPlayers: true });
+    // 顶部"历史牌友"按钮打开：清空目标座，按东→南→西→北顺次入座
+    this.setData({ showRecentPlayers: true, pendingFillSeat: null });
   },
 
   onToggleRecentPlayer(e: WechatMiniprogram.TapEvent) {
@@ -499,18 +598,32 @@ Page({
   },
 
   onConfirmAddRecent() {
-    const picked = this.data.recentPlayers.filter(p => p.checked && !p.inGame);
+    // 按用户勾选顺序入座（先勾的坐东、后勾的坐南…），而非按牌友列表排序
+    const recentMap = new Map<string, RecentPlayer>(
+      this.data.recentPlayers.map(p => [p.id, p] as [string, RecentPlayer])
+    );
+    const picked: RecentPlayer[] = [];
+    for (const id of this.data.recentCheckedOrder) {
+      const p = recentMap.get(id);
+      if (!p) continue;
+      if (p.inGame || !p.checked) continue;
+      picked.push(p);
+      if (picked.length >= MAX_PLAYERS) break;
+    }
     if (picked.length === 0) {
       wx.showToast({ title: '请先勾选要加入的牌友', icon: 'none' });
       return;
     }
 
     const players = [...this.data.players];
+    let fillSeat = this.data.pendingFillSeat;  // 点空白座位触发的"目标座"
     for (const p of picked) {
       if (players.length >= MAX_PLAYERS) break;
       if (players.some(x => x.playerId === p.id)) continue;
-      // 按东→南→西→北顺序分配座位
-      const seat = pickNextSeat(players);
+      // 优先用 pendingFillSeat（点空位触发的入座），用完清空
+      // 否则按 pickNextSeat（按东→南→西→北顺次分配）
+      const seat = fillSeat ?? pickNextSeat(players);
+      if (fillSeat) fillSeat = null;
       players.push({
         playerId: p.id,
         nickname: p.nickname,
@@ -519,21 +632,31 @@ Page({
         isObserver: false,
         seat,
         color: p.color,
-        avatarIdx: (players.length % 8) + 1,
+        avatarIdx: playerAvatarIdx(p),
         scoreText: '',
         negative: false
       } as DraftPlayer);
     }
 
-    this.setData({ players, showRecentPlayers: false });
+    this.setData({
+      players,
+      showRecentPlayers: false,
+      recentCheckedOrder: [],
+      pendingFillSeat: null
+    });
     this.refreshSeats();
     this.refreshMeButton();
+    this.validateScore();
     wx.vibrateShort({ type: 'light' });
-    wx.showToast({ title: `已加入 ${picked.length} 位`, icon: 'success', duration: 1200 });
+    wx.showToast({
+      title: picked.length === 1 ? `已加入 ${picked[0].nickname}` : `已加入 ${picked.length} 位`,
+      icon: 'success',
+      duration: 1200
+    });
   },
 
   onCloseRecentPlayers() {
-    this.setData({ showRecentPlayers: false });
+    this.setData({ showRecentPlayers: false, pendingFillSeat: null });
   },
 
   onLongPressRecentPlayer(e: WechatMiniprogram.TouchEvent) {
@@ -542,48 +665,103 @@ Page({
     if (!player) return;
 
     const me = getMe();
-    if (me && me.id === player.id) {
-      wx.showToast({ title: '「我」不能删除', icon: 'none' });
-      return;
-    }
+    const isMe = !!(me && me.id === player.id);
 
     const inGame = this.data.players.some(p => p.playerId === player.id);
     const usageText = player.usage && player.usage > 0
       ? `TA 参与过 ${player.usage} 局战绩`
       : 'TA 还没有参战记录';
 
+    // 长按 = 管理牌友：换头像（所有人可用）/ 删除档案（「我」不可删）
+    const items: string[] = ['更换头像'];
+    if (!isMe) items.push(`删除牌友「${player.nickname}」`);
+
     wx.showActionSheet({
-      itemList: [`删除牌友「${player.nickname}」`],
-      itemColor: '#D85A30',
-      success: () => {
-        wx.showModal({
-          title: '删除牌友档案',
-          content: `确定删除「${player.nickname}」吗？\n\n${usageText}，删除档案后这些历史战绩会完整保留，只是不再出现在牌友列表里。`,
-          confirmText: '删除',
-          confirmColor: '#D85A30',
-          success: (res) => {
-            if (!res.confirm) return;
-            const r = deletePlayer(player.id);
-            if (!r.ok) {
-              wx.showToast({ title: r.message, icon: 'none' });
-              return;
+      itemList: items,
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          // 打开头像编辑弹层，高亮当前头像
+          this.setData({
+            showAvatarEditor: true,
+            avatarEditorPlayerId: player.id,
+            avatarEditorName: player.nickname,
+            avatarEditorIdx: player.avatarIdx || 1
+          });
+          return;
+        }
+        if (res.tapIndex === 1) {
+          wx.showModal({
+            title: '删除牌友档案',
+            content: `确定删除「${player.nickname}」吗？\n\n${usageText}，删除档案后这些历史战绩会完整保留，只是不再出现在牌友列表里。`,
+            confirmText: '删除',
+            confirmColor: '#D85A30',
+            success: (m) => {
+              if (!m.confirm) return;
+              const r = deletePlayer(player.id);
+              if (!r.ok) {
+                wx.showToast({ title: r.message, icon: 'none' });
+                return;
+              }
+              if (inGame) {
+                this.setData({
+                  players: this.data.players.filter(p => p.playerId !== player.id)
+                });
+                this.refreshSeats();
+                this.validateScore();
+              }
+              this.refreshRecentPlayers();
+              wx.showToast({ title: '已删除', icon: 'success' });
             }
-            if (inGame) {
-              this.setData({
-                players: this.data.players.filter(p => p.playerId !== player.id)
-              });
-              this.refreshSeats();
-            }
-            this.refreshRecentPlayers();
-            wx.showToast({ title: '已删除', icon: 'success' });
-          }
-        });
+          });
+        }
       }
     });
   },
 
+  onCloseAvatarEditor() {
+    this.setData({ showAvatarEditor: false });
+  },
+
+  /** 头像编辑弹层：点选即保存生效 */
+  onAvatarEditorPick(e: WechatMiniprogram.TapEvent) {
+    const idx = Number(e.currentTarget.dataset.idx);
+    const id = this.data.avatarEditorPlayerId;
+    if (!id) return;
+
+    const updated = updatePlayerAvatar(id, idx);
+    if (!updated) {
+      wx.showToast({ title: '牌友不存在', icon: 'none' });
+      return;
+    }
+
+    // 同步本局中的 draft（若该牌友正在牌桌上）
+    const players = this.data.players.map(p =>
+      p.playerId === id ? { ...p, avatarIdx: idx } : p
+    );
+
+    this.setData({
+      players,
+      avatarEditorIdx: idx,
+      showAvatarEditor: false
+    });
+    this.refreshSeats();
+    this.updateModalSeats();
+    this.refreshRecentPlayers();
+    wx.vibrateShort({ type: 'light' });
+    wx.showToast({ title: '头像已更换', icon: 'success', duration: 1000 });
+  },
+
   onPlayerInput(e: WechatMiniprogram.Input) {
-    this.setData({ newPlayerName: e.detail.value });
+    const name = e.detail.value;
+    // 输入昵称后给出系统建议头像（避开已有牌友占用的），用户仍可手动改选
+    this.setData({
+      newPlayerName: name,
+      suggestedAvatarIdx: name.trim() ? suggestAvatarIdx(getPlayers()) : this.data.suggestedAvatarIdx
+    });
+  },
+
+  onSelectAvatar(e: WechatMiniprogram.TapEvent) {
+    this.setData({ selectedAvatarIdx: Number(e.currentTarget.dataset.idx) });
   },
 
   onAddPlayer() {
@@ -615,17 +793,20 @@ Page({
       isObserver: false,
       seat,
       color: player.color,
-      avatarIdx: (this.data.players.length % 8) + 1,
+      // 用户显式选的优先；否则用档案自带头像（findOrCreatePlayer 已避开现有牌友占用的）
+      avatarIdx: this.data.selectedAvatarIdx || player.avatarIdx || playerAvatarIdx(player),
       scoreText: '',
       negative: false
     };
 
     this.setData({
       players: [...this.data.players, draft],
-      newPlayerName: ''
+      newPlayerName: '',
+      selectedAvatarIdx: 0   // 重置显式选择，下一位新牌友继续跟随系统建议
     });
     this.refreshSeats();
     this.refreshMeButton();
+    this.validateScore();
   },
 
   onAddMe() {
@@ -650,14 +831,18 @@ Page({
       isObserver: false,
       seat,
       color: me.color,
-      avatarIdx: (this.data.players.length % 8) + 1,
+      avatarIdx: playerAvatarIdx(me),
       scoreText: '',
       negative: false
     };
     // 「我」固定排在首位（直觉约定）
-    this.setData({ players: [draft, ...this.data.players] });
+    this.setData({
+      players: [draft, ...this.data.players],
+      showRecentPlayers: false   // 关闭抽屉
+    });
     this.refreshSeats();
     this.refreshMeButton();
+    this.validateScore();
     wx.vibrateShort({ type: 'light' });
   },
 
@@ -666,13 +851,16 @@ Page({
    */
   onTapEmptySeat(e: WechatMiniprogram.TapEvent) {
     const seat = e.currentTarget.dataset.seat as Seat;
-    if (this.data.players.length === 0) {
-      wx.showToast({ title: '先添加牌友', icon: 'none' });
+    // 记录"目标座位"，勾选历史牌友后入座这里；
+    // 开局前（players=0）也允许开抽屉——历史牌友里有就直接入座，不拦用户
+    this.refreshRecentPlayers();
+    if (this.data.recentPlayers.length === 0) {
+      wx.showToast({ title: '暂无历史牌友，先添加一位吧', icon: 'none' });
       return;
     }
-    wx.showToast({
-      title: '3 人局：拖拽玩家到空位',
-      icon: 'none'
+    this.setData({
+      pendingFillSeat: seat,
+      showRecentPlayers: true
     });
   },
 
@@ -744,8 +932,8 @@ Page({
       return;
     }
 
-    // 正常情况：弹计分卡
-    this.openScoreModal();
+    // 正常情况：弹计分卡，选中跳到被点的玩家
+    this.openScoreModal(seat);
   },
 
   /** 对调两个座位的玩家 */
@@ -771,7 +959,7 @@ Page({
     this.openScoreModal();
   },
 
-  openScoreModal() {
+  openScoreModal(activeSeat?: Seat) {
     if (this.data.players.length < 2) {
       wx.showToast({ title: `至少 ${MIN_PLAYERS} 人才能开打`, icon: 'none' });
       return;
@@ -781,14 +969,52 @@ Page({
       .filter((s): s is SeatView => !!s)
       .map(s => ({ ...s }));
 
+    // 默认选中：优先用传入的 activeSeat，其次第一个
+    const defaultSeat = (activeSeat && modalSeats.some(s => s.seat === activeSeat))
+      ? activeSeat
+      : modalSeats[0]?.seat ?? null;
+    const defaultView = modalSeats.find(s => s.seat === defaultSeat);
+
     this.setData({
       showScoreModal: true,
-      modalSeats
+      modalSeats,
+      modalActiveSeat: defaultSeat,
+      activePlayerNickname: defaultView?.nickname ?? ''
     });
   },
 
   onCloseScoreModal() {
     this.setData({ showScoreModal: false });
+  },
+
+  /** 内部：把带符号 value 累加到指定座位（计分弹窗内的快捷分数按钮复用此逻辑） */
+  applyQuickScore(seat: Seat, value: number) {
+    const players = [...this.data.players];
+    const p = players.find(x => x.seat === seat);
+    if (!p) return;
+
+    const currentAbs = p.scoreText ? Number(p.scoreText) : 0;
+    const currentSigned = p.negative ? -currentAbs : currentAbs;
+    const nextSigned = Math.max(-9999, Math.min(9999, currentSigned + value));
+
+    p.negative = nextSigned < 0;
+    p.scoreText = Math.abs(nextSigned).toString();
+    p.score = nextSigned;
+
+    this.setData({ players });
+    this.refreshSeats();
+    this.validateScore();
+    wx.vibrateShort({ type: 'light' });
+  },
+
+  /** 点某行玩家 → 设为快捷分数生效目标 */
+  onModalSelectSeat(e: WechatMiniprogram.TapEvent) {
+    const seat = e.currentTarget.dataset.seat as Seat;
+    const target = this.data.players.find(p => p.seat === seat);
+    this.setData({
+      modalActiveSeat: seat,
+      activePlayerNickname: target?.nickname ?? ''
+    });
   },
 
   /**
@@ -828,28 +1054,32 @@ Page({
   },
 
   /**
-   * 弹窗内快捷分数：累加到当前玩家
-   *
-   * 注：当前 MVP 简化为「点谁加谁」—— 加到第一个玩家。后续可加"选中玩家"状态机。
-   * 实际上用户先点头像或 + 按钮打开弹窗时，会把第一个焦点定在某玩家（这里默认第 1 个）。
+   * 弹窗内快捷分数：累加到当前选中玩家
    */
   onModalQuickScore(e: WechatMiniprogram.TapEvent) {
     const value = Number(e.currentTarget.dataset.value);
     if (!value) return;
 
-    // 简化：累加到 modalSeats 第 1 个（按 SEAT_ORDER 顺序）
-    const target = this.data.modalSeats[0];
+    const activeSeat = this.data.modalActiveSeat;
+    if (!activeSeat) return;
+
+    const target = this.data.modalSeats.find(s => s.seat === activeSeat);
     if (!target) return;
 
     const players = [...this.data.players];
     const p = players.find(x => x.seat === target.seat);
     if (!p) return;
 
-    const current = p.scoreText ? Number(p.scoreText) : 0;
-    const next = Math.max(0, current + Math.abs(value));
-    const safe = Math.min(next, 9999).toString();
-    p.scoreText = safe;
-    p.score = p.negative ? -Number(safe) : Number(safe);
+    const currentAbs = p.scoreText ? Number(p.scoreText) : 0;
+    const currentSigned = p.negative ? -currentAbs : currentAbs;
+
+    // value 直接带符号（如 -10 / +10），不再 Math.abs
+    const nextSigned = Math.max(-9999, Math.min(9999, currentSigned + value));
+
+    p.negative = nextSigned < 0;
+    const abs = Math.abs(nextSigned);
+    p.scoreText = abs.toString();
+    p.score = nextSigned;
 
     this.setData({ players });
     this.refreshSeats();
@@ -883,10 +1113,12 @@ Page({
   validateScore() {
     const total = this.data.players.reduce((sum, p) => sum + p.score, 0);
     const valid = total === 0 && this.data.players.length >= MIN_PLAYERS;
+    const hasAnyScore = this.data.players.some(p => p.scoreText && p.scoreText !== '0' && p.scoreText !== '');
     this.setData({
       totalScore: total,
       scoreValid: total === 0,
-      saveEnabled: valid
+      saveEnabled: valid,
+      hasAnyScore
     });
   },
 

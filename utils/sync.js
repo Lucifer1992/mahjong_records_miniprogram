@@ -92,11 +92,12 @@ export function getPendingCount() {
  * @param records 本地全部战绩（用于根据 ID 找出待上传内容）
  */
 export async function syncNow(records) {
+    var _a;
     // 健康检查
     try {
         await healthCheck();
     }
-    catch (_a) {
+    catch (_b) {
         setSyncStatus('error');
         return { pushed: 0, deleted: 0, failed: true };
     }
@@ -125,7 +126,7 @@ export async function syncNow(records) {
                     setList(PENDING_KEY, failedIds);
                 }
             }
-            catch (_b) {
+            catch (_c) {
                 setSyncStatus('error');
                 return { pushed, deleted, failed: true };
             }
@@ -136,17 +137,25 @@ export async function syncNow(records) {
         }
     }
     // 2. 上报待删除（软删除队列）
+    //    成功（或云端本就没有，404 = 免费版窗口已修剪）的移出队列；失败保留下次重试
     if (deletedIds.length > 0) {
+        const remaining = [];
         for (const id of deletedIds) {
             try {
                 await request({ url: `/api/records/${id}`, method: 'DELETE', silent: true, showError: false });
                 deleted++;
             }
-            catch (_c) {
-                // 失败保留
+            catch (e) {
+                const status = (_a = e === null || e === void 0 ? void 0 : e.status) !== null && _a !== void 0 ? _a : 0;
+                if (status === 404) {
+                    deleted++; // 云端本来就没有，视为已删除
+                }
+                else {
+                    remaining.push(id);
+                }
             }
         }
-        setList(DELETED_KEY, deletedIds.slice(deleted));
+        setList(DELETED_KEY, remaining);
     }
     if (tier)
         setTier(tier);

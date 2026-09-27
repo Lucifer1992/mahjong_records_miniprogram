@@ -1,6 +1,6 @@
 // utils/stats.ts - 战绩统计工具
 import { selfScoreIn } from './storage';
-import { formatDate, isInMonth } from './date';
+import { formatDate, getDayResetAt, isInMonth } from './date';
 /**
  * 取「我」在某局的分数
  *
@@ -128,19 +128,26 @@ export function filterRecordsByPlayer(records, playerId) {
     return records.filter(r => r.players.some(p => p.playerId === playerId));
 }
 export function calcDailySession(records, now, myPlayerId, intervalMs = 2 * 60 * 60 * 1000) {
-    const sorted = [...records].sort((a, b) => b.playedAt - a.playedAt);
+    // 1. 算出"今日"起始时间戳（凌晨 resetHour 点）
+    const todayStart = getDayResetAt(now);
+    // 2. 先按 playedAt 倒序，再过滤掉今日之前的记录
+    const sorted = [...records]
+        .sort((a, b) => b.playedAt - a.playedAt)
+        .filter(r => r.playedAt >= todayStart);
+    // 3. 今日无任何记录 → 归零（铁匠明确：今天没打，今天就是 0）
     if (sorted.length === 0) {
-        return { games: 0, netScore: 0, startAt: now };
+        return { games: 0, netScore: 0, startAt: todayStart };
     }
+    // 4. 当日内：相邻两局间隔 ≤ intervalMs 算同会话；遇到 > intervalMs 停止
     let games = 0;
     let netScore = 0;
     let startAt = sorted[0].playedAt;
     let prevAt = sorted[0].playedAt;
     for (const r of sorted) {
         if (games > 0) {
-            const interval = prevAt - r.playedAt; // 倒序：prev 更新，prev - r = 间隔
+            const interval = prevAt - r.playedAt;
             if (interval > intervalMs)
-                break; // 切分，停止
+                break;
         }
         games += 1;
         if (myPlayerId) {

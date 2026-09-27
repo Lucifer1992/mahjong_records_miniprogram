@@ -153,16 +153,23 @@ export async function syncNow(records: GameRecord[]): Promise<{
   }
 
   // 2. 上报待删除（软删除队列）
+  //    成功（或云端本就没有，404 = 免费版窗口已修剪）的移出队列；失败保留下次重试
   if (deletedIds.length > 0) {
+    const remaining: string[] = [];
     for (const id of deletedIds) {
       try {
         await request({ url: `/api/records/${id}`, method: 'DELETE', silent: true, showError: false });
         deleted++;
-      } catch {
-        // 失败保留
+      } catch (e) {
+        const status = (e as any)?.status ?? 0;
+        if (status === 404) {
+          deleted++;   // 云端本来就没有，视为已删除
+        } else {
+          remaining.push(id);
+        }
       }
     }
-    setList(DELETED_KEY, deletedIds.slice(deleted));
+    setList(DELETED_KEY, remaining);
   }
 
   if (tier) setTier(tier);

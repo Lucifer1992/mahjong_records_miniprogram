@@ -28,7 +28,7 @@ function buildMenuSections(tier, windowDates, isLoggedIn) {
         : {
             title: '账号',
             items: [
-                { id: 'login', icon: '🔑', iconType: 'cloud', title: '登录账号', desc: '登录后战绩会自动备份，换手机不丢失', action: 'tap' }
+                { id: 'login', icon: '🔑', iconType: 'cloud', title: '登录账号', desc: '登录后战绩自动存云端，换手机不丢失', action: 'tap' }
             ]
         };
     return [
@@ -40,7 +40,7 @@ function buildMenuSections(tier, windowDates, isLoggedIn) {
                     icon: '☁️',
                     iconType: 'cloud',
                     title: '立即备份',
-                    desc: pro ? '全部战绩永久保存' : `免费版只保留最近 ${windowDates} 天，更早的不会备份`,
+                    desc: pro ? '全部战绩永久保存' : '把手机里的战绩存到云端',
                     action: 'tap'
                 },
                 {
@@ -48,7 +48,7 @@ function buildMenuSections(tier, windowDates, isLoggedIn) {
                     icon: '⬇️',
                     iconType: 'success',
                     title: '下载到本机',
-                    desc: pro ? '换机恢复 / 多端合并' : `换机恢复（免费版仅最近 ${windowDates} 天）`,
+                    desc: pro ? '换手机恢复 / 多端合并' : '换手机后，把云端的战绩拉回来',
                     action: 'tap'
                 }
             ]
@@ -100,8 +100,8 @@ function buildFreeSyncCopy(records, allDates, windowDates) {
     const kept = records.filter(r => keepDates.has(formatDate(r.playedAt))).length;
     const dropped = records.length - kept;
     return dropped > 0
-        ? `要把手机里的 ${records.length} 条战绩备份到账号里。\n\n免费版只保留最近 ${windowDates} 天（约 ${kept} 条），更早的 ${dropped} 条不会备份。`
-        : `要把手机里的 ${records.length} 条战绩备份到账号里，全部保留。`;
+        ? `要把手机里的 ${records.length} 条战绩存到云端。\n\n免费版云端只保存最近 ${windowDates} 天（约 ${kept} 条），更早的 ${dropped} 条不会保存。`
+        : `要把手机里的 ${records.length} 条战绩存到云端，全部保留。`;
 }
 /**
  * 立即同步 —— 全量推送本地战绩到云端
@@ -187,6 +187,8 @@ Page({
      * 拉不到就沿用缓存，不打扰用户
      */
     async refreshTierAsync() {
+        if (!hasToken())
+            return; // 未登录不触发 fetchMe（避免 401 刷屏）
         await refreshTier();
         this.applyTier();
     },
@@ -509,8 +511,8 @@ Page({
         const pro = isPro();
         const windowDates = getFreeWindowDates();
         const content = pro
-            ? '会把账号里的战绩下载到本机，不会删除本机任何数据。'
-            : `会把账号里的战绩下载到本机，不会删除本机任何数据。\n\n免费版账号里只存了最近 ${windowDates} 天，所以能下载的也仅限这些。`;
+            ? '会把云端的战绩下载到手机，不会删除手机里的任何数据。'
+            : `会把云端的战绩下载到手机，不会删除手机里的任何数据。\n\n免费版云端只保存了最近 ${windowDates} 天，所以能下载的也只有这些。`;
         wx.showModal({
             title: '下载到本机',
             content,

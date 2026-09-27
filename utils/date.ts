@@ -77,3 +77,25 @@ export function isInMonth(timestamp: number, year: number, month: number): boole
   const d = new Date(timestamp);
   return d.getFullYear() === year && d.getMonth() + 1 === month;
 }
+
+/**
+ * 获取「今日」起始时间戳（按 resetHour 划日；默认凌晨 4 点）。
+ *
+ * 麻将战绩场景：深夜打到凌晨 2 点也算同一「天」，凌晨 4 点才切到新一天。
+ * - 如果 now >= 今天 resetHour，则今日起始 = 今天 resetHour
+ * - 如果 now < 今天 resetHour（如凌晨 3 点），今日起始 = 昨天 resetHour
+ *
+ * @example
+ *   now = 2026-09-26 12:00, resetHour = 4 → 2026-09-26 04:00
+ *   now = 2026-09-26 03:00, resetHour = 4 → 2026-09-25 04:00
+ */
+export function getDayResetAt(timestamp: number, resetHour: number = 4): number {
+  const d = new Date(timestamp);
+  const todayReset = new Date(
+    d.getFullYear(), d.getMonth(), d.getDate(), resetHour, 0, 0, 0
+  ).getTime();
+  // 现在还没到今天的 resetHour（凌晨时段），今日其实从昨天 resetHour 算起
+  return timestamp >= todayReset
+    ? todayReset
+    : todayReset - 24 * 60 * 60 * 1000;
+}
