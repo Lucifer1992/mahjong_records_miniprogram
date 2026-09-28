@@ -62,7 +62,10 @@ Page({
 
     // 列表
     records: [] as RecordItem[],
-    filteredRecords: [] as RecordItem[],
+    filteredRecords: [],
+    displayedRecords: [] as RecordItem[],   // 折叠后实际渲染的列表（默认 5 条，展开 = 全部）
+    recordsExpanded: false,                // 默认折叠，保证广告位常驻可见
+    recordsCollapsedCount: 1,              // 折叠阈值（只展示最近 1 条战绩）
     hasRecords: false,
 
     // 牌友过滤（首页"查看该牌友历史"入口携带 ?nickname=老张）
@@ -166,6 +169,7 @@ Page({
       ruleFilterOptions,
       records: list,
       filteredRecords: list,
+      displayedRecords: list.slice(0, this.data.recordsCollapsedCount),
       hasRecords: list.length > 0,
       selectedRuleFilter: 'all',
       selectedFilterIndex,
@@ -174,6 +178,23 @@ Page({
       showAd: adEnabled('recordsBanner', isPro()),
       adUnitId: adUnitId('recordsBanner')
     });
+  },
+
+  /**
+   * 战绩列表折叠/展开切换
+   *
+   * 列表太长会让底部的 banner 广告曝光不到 —— 折叠让广告位常驻可见；
+   * 用户想看历史时再点展开。
+   */
+  onToggleRecordsExpand() {
+    const expanded = !this.data.recordsExpanded;
+    this.setData({
+      recordsExpanded: expanded,
+      displayedRecords: expanded
+        ? this.data.filteredRecords
+        : this.data.filteredRecords.slice(0, this.data.recordsCollapsedCount)
+    });
+    wx.vibrateShort({ type: 'light' });
   },
 
   onRuleFilterChange(e: WechatMiniprogram.PickerChange) {
@@ -200,7 +221,13 @@ Page({
       filtered = filtered.filter(r => r.players.some(p => p.nickname === nickname));
     }
 
-    this.setData({ filteredRecords: filtered });
+    // 切换筛选时也按当前折叠/展开状态同步 displayedRecords
+    this.setData({
+      filteredRecords: filtered,
+      displayedRecords: this.data.recordsExpanded
+        ? filtered
+        : filtered.slice(0, this.data.recordsCollapsedCount)
+    });
   },
 
   /** 清除 nickname 过滤（用户在过滤条点 × 退出牌友专属视图） */

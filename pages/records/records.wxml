@@ -81,9 +81,9 @@
     <view class="filter-info">{{ filteredRecords.length }} 场战绩</view>
   </view>
 
-  <!-- 战绩列表 -->
+  <!-- 战绩列表（默认只展示最近 1 条，>1 条折叠收起，保证下方 banner 开屏即见） -->
   <view wx:if="{{ hasRecords }}" class="record-list">
-    <view wx:for="{{ filteredRecords }}" wx:key="id"
+    <view wx:for="{{ displayedRecords }}" wx:key="id"
           class="record-card"
           data-id="{{ item.id }}"
           bindtap="onRecordTap"
@@ -145,8 +145,17 @@
     </view>
   </view>
 
-  <!-- 广告：仅免费用户（Pro 免广告）；后台未配置广告位 ID 时不渲染 -->
+  <!-- 广告：仅免费用户（Pro 免广告）；默认折叠只显示最近 1 条战绩，banner 紧贴列表后，开屏即可见 -->
   <ad wx:if="{{ showAd }}" unit-id="{{ adUnitId }}" class="ad-banner"></ad>
+
+  <!-- 展开/收起更多战绩：默认折叠阈值=1，>1 条时显示展开按钮 -->
+  <view wx:if="{{ filteredRecords.length > recordsCollapsedCount }}"
+        class="record-expand-btn {{ recordsExpanded ? 'is-expanded' : '' }}"
+        bindtap="onToggleRecordsExpand">
+    <text wx:if="{{ recordsExpanded }}">收起</text>
+    <text wx:else>查看更多（还有 {{ filteredRecords.length - recordsCollapsedCount }} 条）</text>
+    <text class="record-expand-arrow">›</text>
+  </view>
 
 </view>
 <!-- 登录抽屉（未登录时由 utils/auth 弹出；登录成功回调刷新页面数据） -->

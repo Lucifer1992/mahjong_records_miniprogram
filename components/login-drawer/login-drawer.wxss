@@ -44,8 +44,8 @@
 
 /* 子抽屉更紧凑 */
 .drawer-panel-profile {
-  padding-top: 40rpx;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 28rpx);
+  padding-top: 32rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 24rpx);
 }
 
 .drawer-close {
@@ -248,70 +248,103 @@
 }
 
 /* ========== 完善资料子抽屉 ========== */
-.drawer-profile-row {
+.drawer-profile {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 24rpx;
-  margin-bottom: 28rpx;
+  margin-bottom: 20rpx;
 }
 
+/*
+ * 微信 chooseAvatar button 自带默认样式（椭圆灰底 + 内边距），无法通过常规 CSS 完全清除。
+ * 解决：button 透明、padding 归零；用一个 .avatar-mask 同尺寸圆形覆盖在 button 内部，盖住默认椭圆；
+ * image / placeholder-icon 仍然是 button 直接子节点（必须，否则拿不到头像 URL）。
+ */
 .avatar-btn {
   position: relative;
-  width: 96rpx;
-  height: 96rpx;
-  padding: 0;
-  margin: 0;
+  width: 96rpx !important;
+  height: 96rpx !important;
+  padding: 0 !important;
+  margin: 0 0 20rpx;
   border-radius: 50%;
-  background: #F1EFE8;
-  overflow: visible;
+  background: transparent !important;
+  overflow: hidden;
   flex-shrink: 0;
+  line-height: 1;
+  font-size: 0;          /* 兜底清除 button 文字间距 */
+  text-align: center;
 }
 
 .avatar-btn::after {
-  border: none;
+  border: none !important;
+  display: none !important;
+  width: 0;
+  height: 0;
+  content: none;
+}
+
+/* 视觉圆形：覆盖 button 默认椭圆，露出干净的圆形头像区 */
+.avatar-mask {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: #F1EFE8;
+  z-index: 0;
 }
 
 .avatar-img {
+  position: relative;
+  z-index: 1;
   width: 96rpx;
   height: 96rpx;
   border-radius: 50%;
   display: block;
 }
 
-.avatar-placeholder {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 50%;
-  background: #F1EFE8;
+.avatar-placeholder-icon {
+  position: relative;
+  z-index: 1;
   font-size: 44rpx;
-  line-height: 96rpx;
-  text-align: center;
   color: #B0AFA8;
+  line-height: 96rpx;
 }
 
-.avatar-plus {
+/* 头像右下"编辑"小标签：扁平、低饱和，避免"+"符号带来的杂乱感 */
+.avatar-edit-tag {
   position: absolute;
-  right: -6rpx;
-  bottom: -6rpx;
-  width: 36rpx;
-  height: 36rpx;
-  border-radius: 50%;
+  right: -2rpx;
+  bottom: -2rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 14rpx;
   background: #4A9D7E;
-  color: #fff;
-  font-size: 24rpx;
-  line-height: 36rpx;
-  text-align: center;
+  color: #FFFFFF;
+  font-size: 18rpx;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  z-index: 2;
 }
 
+/* 昵称输入框：全宽，文字居左，加内部留白更舒服 */
 .nickname-input {
-  flex: 1;
-  height: 80rpx;
+  width: 100%;
+  box-sizing: border-box;
+  height: 72rpx;
   padding: 0 24rpx;
-  border-radius: 20rpx;
+  border-radius: 18rpx;
   background: #F7F5F0;
   font-size: 26rpx;
   color: #2B2A26;
-  text-align: center;     /* 与头像按钮垂直统一视觉 */
+  text-align: left;
+  border: 2rpx solid transparent;
+  transition: border-color 0.15s;
+}
+
+.nickname-input:focus {
+  border-color: #4A9D7E;
+  background: #FFFFFF;
 }
 
 .nickname-placeholder {
@@ -323,6 +356,7 @@
   text-align: center;
   font-size: 24rpx;
   color: #9B9A93;
+  letter-spacing: 1rpx;
 }
 
 .drawer-skip:active {

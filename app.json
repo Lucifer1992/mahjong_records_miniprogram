@@ -38,7 +38,7 @@
       },
       {
         "pagePath": "pages/analysis/analysis",
-        "text": "分析",
+        "text": "复盘",
         "iconPath": "images/tab/tab-analysis.png",
         "selectedIconPath": "images/tab/tab-analysis-active.png"
       },

@@ -1262,24 +1262,29 @@
 .recent-name-row {
   display: flex;
   align-items: center;
-  gap: 10rpx;
+  gap: 14rpx;          /* 昵称和方位预告之间留更宽间距，避免视觉贴脸 */
+}
+
+.recent-name {
+  flex: none;
 }
 
 .recent-seat-badge {
   flex: none;
-  padding: 0 8rpx;
+  padding: 2rpx 10rpx;       /* 上下 padding 让标签与基线有呼吸空间 */
   border-radius: 6rpx;
   font-size: 18rpx;
   font-weight: 400;
   color: #fff;
   line-height: 1.4;
+  margin-left: 2rpx;          /* 双重保险：再加点左间距 */
 }
 
-/* 抽屉方位预告标签背景（作用域限定在 .recent-seat-badge，避免与主牌桌 .seat-north 等类名冲突） */
-.recent-seat-badge.seat-east,
-.recent-seat-badge.seat-south,
-.recent-seat-badge.seat-west,
-.recent-seat-badge.seat-north {
+/* 抽屉方位预告标签背景（独立类名 .recent-seat-{seat}，避免与主牌桌 .seat-north 等类名冲突） */
+.recent-seat-badge.recent-seat-east,
+.recent-seat-badge.recent-seat-south,
+.recent-seat-badge.recent-seat-west,
+.recent-seat-badge.recent-seat-north {
   background: var(--color-primary, #4A9D7E);
 }
 

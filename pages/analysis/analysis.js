@@ -15,6 +15,98 @@ const FORTUNE_UNLOCK_KEY = 'fortuneFull';
 function decorate(list) {
     return (list || []).map(p => (Object.assign(Object.assign({}, p), { winRateText: formatWinRate(p.winRate), netScoreText: formatNetScore(p.netScore) })));
 }
+/** 本月战报计算：基于 selectedPlayer 视角 */
+function buildMonthlyReport(records, playerId, year, month) {
+    const monthRecords = records.filter(r => {
+        const d = new Date(r.playedAt);
+        return d.getFullYear() === year && (d.getMonth() + 1) === month &&
+            r.players.some(p => p.playerId === playerId);
+    });
+    if (monthRecords.length === 0) {
+        return null;
+    }
+    let wins = 0;
+    let netScore = 0;
+    let mvpMap = new Map(); // 搭档同桌次数
+    let ruleMap = new Map(); // 玩法计数
+    for (const r of monthRecords) {
+        const me = r.players.find(p => p.playerId === playerId);
+        if (!me)
+            continue;
+        if (me.score > 0)
+            wins++;
+        netScore += me.score;
+        if (r.ruleName)
+            ruleMap.set(r.ruleName, (ruleMap.get(r.ruleName) || 0) + 1);
+        for (const p of r.players) {
+            if (p.playerId === playerId)
+                continue;
+            mvpMap.set(p.nickname, (mvpMap.get(p.nickname) || 0) + 1);
+        }
+    }
+    // MVP：同桌次数最多者
+    let mvpNickname = '-';
+    let mvpGames = 0;
+    mvpMap.forEach((v, k) => {
+        if (v > mvpGames) {
+            mvpGames = v;
+            mvpNickname = k;
+        }
+    });
+    // 玩法：最多者
+    let topRuleName = '-';
+    let topRuleCount = 0;
+    ruleMap.forEach((v, k) => {
+        if (v > topRuleCount) {
+            topRuleCount = v;
+            topRuleName = k;
+        }
+    });
+    const winRate = monthRecords.length > 0 ? Math.round((wins / monthRecords.length) * 100) : 0;
+    return {
+        year, month,
+        totalGames: monthRecords.length,
+        winRate,
+        winRateText: `${winRate}%`,
+        netScore,
+        netScoreText: (netScore > 0 ? '+' : '') + netScore,
+        mvpNickname, mvpGames,
+        topRuleName, topRuleCount
+    };
+}
+/** 最近 6 月场次趋势（含当前月） */
+function buildMonthlyTrend(records, playerId, currentYear) {
+    const MONTHS_BACK = 5; // 加上当月 = 6 个月
+    const items = [];
+    const now = new Date();
+    for (let i = MONTHS_BACK; i >= 0; i--) {
+        const d = new Date(currentYear, now.getMonth() - i, 1);
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const monthRecords = records.filter(r => {
+            const rd = new Date(r.playedAt);
+            return rd.getFullYear() === y && (rd.getMonth() + 1) === m &&
+                (!playerId || r.players.some(p => p.playerId === playerId));
+        });
+        let net = 0;
+        if (playerId) {
+            for (const r of monthRecords) {
+                const me = r.players.find(p => p.playerId === playerId);
+                if (me)
+                    net += me.score;
+            }
+        }
+        items.push({
+            label: `${m}月`,
+            yearMonth: `${y}-${String(m).padStart(2, '0')}`,
+            count: monthRecords.length,
+            netScore: net,
+            isCurrent: i === 0
+        });
+    }
+    const max = Math.max(1, ...items.map(i => i.count));
+    return items.map(i => (Object.assign(Object.assign({}, i), { max })));
+}
 function formatTime(ts) {
     const d = new Date(ts);
     const h = d.getHours().toString().padStart(2, '0');
@@ -26,7 +118,8 @@ Page({
         activeTab: 'fortune',
         tabs: [
             { id: 'fortune', name: '福星克星', icon: '⭐' },
-            { id: 'calendar', name: '牌局月历', icon: '📅' }
+            { id: 'calendar', name: '牌局月历', icon: '📅' },
+            { id: 'report', name: '月度报表', icon: '📊', proOnly: true }
         ],
         // 福星克星
         players: [],
@@ -53,7 +146,11 @@ Page({
         selectedDay: null,
         selectedDayRecords: [],
         /** 选中日的农历全称，如「八月十五 · 中秋节」 */
-        selectedDayLunar: ''
+        selectedDayLunar: '',
+        // ===== Pro 月度报表（解锁后展示；免费版仅显示锁定卡）=====
+        isPro: false,
+        monthlyReport: null, // 本月战报
+        monthlyTrend: [] // 最近 6 月场次趋势
     },
     onLoad() {
         this.loadData();
@@ -97,8 +194,16 @@ Page({
         const advice = selectedPlayer
             ? buildMonthAdvice(records, selectedPlayer.id)
             : null;
+        // ====== Pro 月度报表（本月战报 + 最近 6 月趋势）======
+        // 即使非 Pro 也算好，存在 data 里；Pro 时 WXML 显示完整，否则显示锁定卡
+        const proActive = isPro();
+        const monthlyReport = selectedPlayer
+            ? buildMonthlyReport(records, selectedPlayer.id, year, month)
+            : null;
+        const monthlyTrend = buildMonthlyTrend(records, selectedPlayer ? selectedPlayer.id : undefined, year);
         this.setData(Object.assign(Object.assign({ players, selectedPlayerId: (selectedPlayer === null || selectedPlayer === void 0 ? void 0 : selectedPlayer.id) || '', selectedPlayerIndex: selectedIdx, analysis, enoughData: records.length >= MIN_GAMES_FOR_ANALYSIS, totalGames,
-            relevantGames, luckyList: decorate(analysis === null || analysis === void 0 ? void 0 : analysis.luckyPartners) }, this.evilView(analysis)), { advice, currentYear: year, currentMonth: month, monthText: `${year}年${month}月`, calendarCells: calendar.cells, calendarStats: calendar.stats }));
+            relevantGames, luckyList: decorate(analysis === null || analysis === void 0 ? void 0 : analysis.luckyPartners) }, this.evilView(analysis)), { advice, currentYear: year, currentMonth: month, monthText: `${year}年${month}月`, calendarCells: calendar.cells, calendarStats: calendar.stats, isPro: proActive, monthlyReport,
+            monthlyTrend }));
     },
     /**
      * 克星榜分层视图：Pro / 已看广告解锁 → 完整榜；
@@ -133,6 +238,11 @@ Page({
     },
     onTabChange(e) {
         const tab = e.currentTarget.dataset.tab;
+        // Pro Tab 切换时：非 Pro 用户直接跳升级引导（已经在 report tab 里也是锁定卡）
+        if (tab === 'report' && !isPro()) {
+            this.setData({ activeTab: 'report' }); // 先切过去显示锁定卡
+            return;
+        }
         this.setData({ activeTab: tab });
     },
     onPlayerChange(e) {

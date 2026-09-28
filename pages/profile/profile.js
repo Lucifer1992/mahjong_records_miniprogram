@@ -56,6 +56,7 @@ function buildMenuSections(tier, windowDates, isLoggedIn) {
         {
             title: '数据管理',
             items: [
+                { id: 'review', icon: '📊', iconType: 'success', title: '战绩复盘', desc: '克星/福星/月度报表', action: 'switchTab' },
                 { id: 'export', icon: '📤', iconType: 'cloud', title: '导出战绩', desc: '转发到微信聊天，可长期保存', action: 'tap' },
                 { id: 'clear', icon: '🗑️', iconType: 'warning', title: '清空数据', desc: '删除所有战绩和玩家，不可恢复', action: 'tap' }
             ]
@@ -396,7 +397,7 @@ Page({
             title: '生成演示数据',
             content: existing > 0
                 ? `当前已有 ${existing} 条战绩，生成演示数据会覆盖它们。\n\n生成前会自动存一份快照，可以用「恢复生成前数据」回滚。\n\n确定继续吗？`
-                : '将生成约 5 个月的历史战绩 + 8 位玩家档案，用于演示「福星克星」和「牌局月历」。\n\n确定继续吗？',
+                : '将生成约 5 个月的历史战绩 + 8 位玩家档案，用于演示「战绩复盘」和「牌局月历」。\n\n确定继续吗？',
             confirmText: '生成',
             success: (res) => {
                 if (!res.confirm)
@@ -614,7 +615,7 @@ Page({
         if (isPro()) {
             wx.showModal({
                 title: 'Pro 权益',
-                content: '你已经是 Pro 用户：\n\n· 全部战绩永久备份\n· 换机后完整恢复历史\n· 不限备份天数',
+                content: '你已解锁全部 Pro 权益：\n\n· 战绩分享去水印 + 1080P 高清\n· 克星榜全量 + 战绩复盘\n· 云端全量保留，不限天数\n· 一次性付费，永久使用',
                 showCancel: false,
                 confirmText: '知道了'
             });
@@ -622,12 +623,36 @@ Page({
         }
         if (!requireLogin(this))
             return;
+        // iOS 微信 ≥ 8.0.68 才能调起虚拟支付（官方硬性要求；旧版本直接调会失败）
+        const sys = wx.getSystemInfoSync();
+        if (sys.platform === 'ios') {
+            const cur = (sys.version || '').split('.').map(n => Number(n) || 0);
+            const base = [8, 0, 68];
+            let blocked = false;
+            for (let i = 0; i < 3; i++) {
+                if (cur[i] > base[i])
+                    break;
+                if (cur[i] < base[i]) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (blocked) {
+                wx.showModal({
+                    title: '请更新微信',
+                    content: 'iOS 端虚拟支付需要微信 8.0.68 及以上版本，请更新后再试。',
+                    showCancel: false,
+                    confirmText: '知道了'
+                });
+                return;
+            }
+        }
         const confirm = await new Promise(resolve => {
             wx.showModal({
-                title: '升级 Pro 终身版',
-                content: '¥9.9 一次性付费，永久享\n\n· 全部战绩永久备份\n· 换机后完整恢复历史\n· 克星榜看全量\n\n付款由微信虚拟支付保障，本工具仅供娱乐记录。',
-                confirmText: '¥9.9 升级',
-                cancelText: '暂不',
+                title: '¥9.9 永久解锁 Pro',
+                content: '一次性付费 · 永久使用 · 不订阅\n\n· 战绩分享去水印 + 1080P 高清\n· 克星榜全量 + 战绩复盘解锁\n· 云端全量保留，不限天数\n\n付款由微信虚拟支付保障，本工具仅供娱乐记录。',
+                confirmText: '¥9.9 立即解锁',
+                cancelText: '继续免费使用',
                 success: (r) => resolve(r.confirm)
             });
         });
@@ -782,6 +807,10 @@ Page({
             case 'export':
                 this.onExport();
                 break;
+            case 'review':
+                // 战绩复盘是 tabbar 页面，用 switchTab（navigateTo 会丢 tabbar）
+                wx.switchTab({ url: '/pages/analysis/analysis' });
+                break;
             case 'mockData':
                 this.onMockData();
                 break;
@@ -797,7 +826,7 @@ Page({
             case 'about':
                 wx.showModal({
                     title: '雀战录 v1.0.0',
-                    content: '麻将战绩记录 + 数据分析工具\n\n主打功能：\n·• 福星克星分析\n·• 牌局月历\n·• 战绩分享卡\n\n📅 2026-09-11',
+                    content: '麻将战绩记录 + 数据复盘工具\n\n主打功能：\n·• 战绩复盘（克星/福星/月度报表）\n·• 牌局月历\n·• 战绩分享卡\n\n📅 2026-09-11',
                     showCancel: false,
                     confirmText: '好的'
                 });

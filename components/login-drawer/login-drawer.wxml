@@ -59,11 +59,15 @@
     <view class="drawer-title">完善账户信息</view>
     <view class="drawer-sub">选填，用于「我的」页账户展示</view>
 
-    <view class="drawer-profile-row">
+    <!-- 头像 + 昵称：垂直居中布局，下方一个大输入框 -->
+    <view class="drawer-profile">
       <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <!-- image 必须是 button 直接子节点才能拿到头像 URL -->
         <image wx:if="{{ avatarPath }}" class="avatar-img" src="{{ avatarPath }}" mode="aspectFill" />
-        <view wx:else class="avatar-placeholder">👤</view>
-        <view class="avatar-plus">＋</view>
+        <text wx:else class="avatar-placeholder-icon">👤</text>
+        <!-- 视觉覆盖层：画一个 144rpx 圆 + 编辑标签，盖住 button 默认椭圆样式 -->
+        <view class="avatar-mask"></view>
+        <view class="avatar-edit-tag">编辑</view>
       </button>
       <input class="nickname-input"
              type="nickname"

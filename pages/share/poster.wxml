@@ -85,6 +85,22 @@
     <view class="empty-subtitle">先去记一场吧</view>
   </view>
 
+  <!-- 免费用户：Pro 升级引导横幅（点击跳 profile 的升级弹窗） -->
+  <view wx:if="{{ record && !isPro }}" class="pro-cta" bindtap="onTapProCta">
+    <view class="pro-cta-icon">✨</view>
+    <view class="pro-cta-text">
+      <text class="pro-cta-title">升级 Pro 去水印 + 1080P 高清</text>
+      <text class="pro-cta-sub">¥9.9 一次性 · 永久使用</text>
+    </view>
+    <text class="pro-cta-arrow">›</text>
+  </view>
+
+  <!-- Pro 用户：去掉水印的提示 -->
+  <view wx:if="{{ record && isPro }}" class="pro-active">
+    <text class="pro-active-icon">✓</text>
+    <text class="pro-active-text">Pro 已解锁 · 海报无水印 + 1080P 高清</text>
+  </view>
+
   <!-- 操作栏 -->
   <view wx:if="{{ record }}" class="action-bar">
     <button class="action-btn btn-share" open-type="share">

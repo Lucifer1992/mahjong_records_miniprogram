@@ -74,7 +74,7 @@
       <view class="tier-badge">{{ isPro ? 'PRO' : 'FREE' }}</view>
       <view class="tier-title-wrap">
         <text class="tier-title">{{ isPro ? 'Pro 版' : '免费版' }}</text>
-        <text class="tier-sub">{{ isPro ? '全部战绩永久保存' : '云端只保存最近 ' + cloudWindowDates + ' 天战绩' }}</text>
+        <text class="tier-sub">{{ isPro ? '已解锁全部 Pro 权益' : '¥9.9 一次性解锁全部权益' }}</text>
       </view>
       <view class="tier-action" bindtap="onUpgrade">
         <text>{{ isPro ? '权益' : '升级' }}</text>
@@ -83,11 +83,15 @@
     <view class="tier-body">
       <view class="tier-line">
         <text class="tier-dot"></text>
-        <text class="tier-line-text">手机里的战绩全部保留，永远不会丢</text>
+        <text class="tier-line-text">{{ isPro ? '战绩分享去水印 + 1080P 高清' : '战绩分享带水印（升级去水印）' }}</text>
       </view>
       <view class="tier-line">
         <text class="tier-dot"></text>
-        <text class="tier-line-text">{{ isPro ? '云端全量累积，换手机全部找回' : '换手机时只能找回云端那份，升级后全部找回' }}</text>
+        <text class="tier-line-text">{{ isPro ? '克星榜全量 + 战绩复盘解锁' : '克星榜仅看 TOP1（升级看全部）' }}</text>
+      </view>
+      <view class="tier-line">
+        <text class="tier-dot"></text>
+        <text class="tier-line-text">{{ isPro ? '云端全量保留，不限天数' : '云端只保存最近 ' + cloudWindowDates + ' 天（升级全量）' }}</text>
       </view>
     </view>
   </view>

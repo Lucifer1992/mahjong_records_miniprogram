@@ -20,6 +20,20 @@ export function pickNextSeat(players: PlayerScore[]): Seat | null {
 }
 
 /**
+ * 从 anchorSeat 起按 SEAT_ORDER 顺时针找下一个空座位。
+ * 用于「点空白座位后勾选多位」的入座顺序：第一位坐 anchor，后续顺时针延展。
+ */
+export function pickNextSeatFrom(players: PlayerScore[], anchorSeat: Seat): Seat | null {
+  const occupied = new Set(players.map(p => p.seat).filter((s): s is Seat => !!s));
+  const startIdx = SEAT_ORDER.indexOf(anchorSeat);
+  for (let off = 0; off < 4; off++) {
+    const seat = SEAT_ORDER[(startIdx + off) % 4];
+    if (!occupied.has(seat)) return seat;
+  }
+  return null;
+}
+
+/**
  * Storage 键名
  */
 const KEYS = {

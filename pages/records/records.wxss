@@ -515,3 +515,34 @@
 .ad-banner {
   margin: 24rpx 24rpx 40rpx;
 }
+
+/* ===== 战绩列表展开/收起 ===== */
+.record-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  margin: 16rpx 24rpx 0;
+  padding: 20rpx 24rpx;
+  border-radius: 20rpx;
+  background: #FFFFFF;
+  box-shadow: var(--shadow-sm);
+  font-size: 26rpx;
+  color: #4A9D7E;
+  font-weight: 500;
+}
+
+.record-expand-btn:active {
+  background: #F7F5F0;
+}
+
+.record-expand-arrow {
+  font-size: 28rpx;
+  color: #4A9D7E;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+
+.record-expand-btn.is-expanded .record-expand-arrow {
+  transform: rotate(90deg);   /* 展开状态箭头朝下（语义：可收起） */
+}

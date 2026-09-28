@@ -5,7 +5,7 @@ import { SEAT_ORDER, SEAT_LABELS } from '../../utils/types';
 import { SUPPORTED_RULES, CUSTOM_RULE_ENTRY, CUSTOM_RULE_NAME_MAX, DURATIONS, MOODS, MIN_PLAYERS, MAX_PLAYERS } from '../../utils/constants';
 /** 预设卡通头像列表（assets/avatars/avatar-XX.png，1-20）*/
 export const AVATAR_OPTIONS = Array.from({ length: 20 }, (_, i) => `/assets/avatars/avatar-${String(i + 1).padStart(2, '0')}.png`);
-import { addRecord, findOrCreatePlayer, suggestAvatarIdx, updatePlayerAvatar, getPlayers, getRecords, ensureMe, getMe, rememberLastRuleType, getLastOrDefaultRuleType, getSettings, rememberLastDuration, deletePlayer, getRecentLineups, pickNextSeat, uuid } from '../../utils/storage';
+import { addRecord, findOrCreatePlayer, suggestAvatarIdx, updatePlayerAvatar, getPlayers, getRecords, ensureMe, getMe, rememberLastRuleType, getLastOrDefaultRuleType, getSettings, rememberLastDuration, deletePlayer, getRecentLineups, pickNextSeat, pickNextSeatFrom, uuid } from '../../utils/storage';
 import { inferDurationByClock } from '../../utils/duration';
 import { formatDateShort, formatDateTime } from '../../utils/date';
 import { enqueuePush, tryAutoSync } from '../../utils/sync';
@@ -369,7 +369,7 @@ Page({
         }
         this.setData({ recentPlayers: list });
     },
-    setRecentChecked(ids) {
+    setRecentChecked(ids, anchorSeat) {
         var _a, _b;
         const set = new Set(ids);
         // 先算 checked 状态
@@ -380,18 +380,23 @@ Page({
         const inGameIds = new Set(this.data.recentPlayers.filter(p => p.inGame).map(p => p.id));
         const order = ids.filter(id => !inGameIds.has(id));
         this.setData({ recentCheckedOrder: order });
+        // 顺时针俯视序列（北→东→南→西）即 SEAT_ORDER 本身，从 anchorSeat 起循环取。
+        //   默认从东起（=SEAT_ORDER 顺序）；点空白座位打开时从 anchorSeat 起（如 south→west→north→east）。
+        const baseIdx = anchorSeat ? SEAT_ORDER.indexOf(anchorSeat) : 0;
+        const cwOrder = anchorSeat
+            ? [0, 1, 2, 3].map(off => SEAT_ORDER[(baseIdx + off) % 4])
+            : SEAT_ORDER;
         // 再为每个玩家计算 nextSeat：
-        //   按 SEAT_ORDER（东→南→西→北）走，已 inGame 的占固定方位，其余方位按 recentCheckedOrder 顺次填
-        //   所以下一个新玩家占的是「第一个空着」的方位，而不是从 0 重新累加
+        //   按 cwOrder 顺次走，已 inGame 的占固定方位，其余方位按 recentCheckedOrder 顺次填
         const inGameSeats = new Set(list.filter(p => p.inGame).map(p => p.seat));
         const orderIndex = new Map();
         this.data.recentCheckedOrder.forEach((id, i) => orderIndex.set(id, i));
-        // 按 SEAT_ORDER 把 inGame 玩家放回各自座位，再按 recentCheckedOrder 把勾选的顺次填剩下的空位
+        // 按 cwOrder 把 inGame 玩家放回各自座位，再按勾选顺序把 checked 的顺次填剩下的空位
         const seatFill = new Array(4).fill(null);
         // 第一遍：放 inGame
         list.filter(p => p.inGame).forEach(p => {
             if (p.seat)
-                seatFill[SEAT_ORDER.indexOf(p.seat)] = p;
+                seatFill[cwOrder.indexOf(p.seat)] = p;
         });
         // 第二遍：按勾选顺序填剩下的空位
         const slots = list.filter(p => !p.inGame && p.checked)
@@ -406,7 +411,7 @@ Page({
         const seatOfPlayer = new Map();
         seatFill.forEach((p, i) => {
             if (p)
-                seatOfPlayer.set(p.id, SEAT_ORDER[i]);
+                seatOfPlayer.set(p.id, cwOrder[i]);
         });
         for (const p of list) {
             if (p.inGame) {
@@ -434,6 +439,7 @@ Page({
         this.setData({ showRecentPlayers: true, pendingFillSeat: null });
     },
     onToggleRecentPlayer(e) {
+        var _a;
         const idx = Number(e.currentTarget.dataset.index);
         const player = this.data.recentPlayers[idx];
         if (!player)
@@ -449,14 +455,16 @@ Page({
         const next = this.data.recentPlayers
             .filter(p => p.checked && !p.inGame)
             .map(p => p.id);
+        const anchor = (_a = this.data.pendingFillSeat) !== null && _a !== void 0 ? _a : undefined;
         if (player.checked) {
-            this.setRecentChecked(next.filter(id => id !== player.id));
+            this.setRecentChecked(next.filter(id => id !== player.id), anchor);
         }
         else {
-            this.setRecentChecked([...next, player.id]);
+            this.setRecentChecked([...next, player.id], anchor);
         }
     },
     onApplyLineup(e) {
+        var _a;
         const idx = Number(e.currentTarget.dataset.index);
         const lineup = this.data.recentLineups[idx];
         if (!lineup)
@@ -471,13 +479,14 @@ Page({
             ? current.filter(id => !targetIds.includes(id))
             : Array.from(new Set([...current, ...targetIds]));
         const slots = this.recentSlotsLeft();
+        const anchor = (_a = this.data.pendingFillSeat) !== null && _a !== void 0 ? _a : undefined;
         if (!allOn && next.length > slots) {
             const kept = next.slice(0, slots);
-            this.setRecentChecked(kept);
+            this.setRecentChecked(kept, anchor);
             wx.showToast({ title: `最多 ${MAX_PLAYERS} 人，只加了前 ${slots} 位`, icon: 'none' });
             return;
         }
-        this.setRecentChecked(next);
+        this.setRecentChecked(next, anchor);
         wx.vibrateShort({ type: 'light' });
     },
     onConfirmAddRecent() {
@@ -499,17 +508,17 @@ Page({
             return;
         }
         const players = [...this.data.players];
-        let fillSeat = this.data.pendingFillSeat; // 点空白座位触发的"目标座"
+        const anchorSeat = this.data.pendingFillSeat; // 点空白座位触发的"目标座"
         for (const p of picked) {
             if (players.length >= MAX_PLAYERS)
                 break;
             if (players.some(x => x.playerId === p.id))
                 continue;
-            // 优先用 pendingFillSeat（点空位触发的入座），用完清空
-            // 否则按 pickNextSeat（按东→南→西→北顺次分配）
-            const seat = fillSeat !== null && fillSeat !== void 0 ? fillSeat : pickNextSeat(players);
-            if (fillSeat)
-                fillSeat = null;
+            // 有点空白座位的锚点：第一位坐 anchor，后续顺时针延展（pickNextSeatFrom）
+            // 否则按 pickNextSeat（按 SEAT_ORDER 找第一个空位）
+            const seat = anchorSeat
+                ? pickNextSeatFrom(players, anchorSeat)
+                : pickNextSeat(players);
             players.push({
                 playerId: p.id,
                 nickname: p.nickname,
@@ -547,8 +556,11 @@ Page({
         const player = this.data.recentPlayers[idx];
         if (!player)
             return;
-        const me = getMe();
-        const isMe = !!(me && me.id === player.id);
+        // 「我」= 本局牌桌里被绑定的那个；本局里没人时所有人可删
+        const settings = wx.getStorageSync('mahjong:settings') || {};
+        const myPlayerId = settings.myPlayerId;
+        const meInThisGame = myPlayerId && this.data.players.some(p => p.playerId === myPlayerId);
+        const isMe = !!(meInThisGame && myPlayerId === player.id);
         const inGame = this.data.players.some(p => p.playerId === player.id);
         const usageText = player.usage && player.usage > 0
             ? `TA 参与过 ${player.usage} 局战绩`

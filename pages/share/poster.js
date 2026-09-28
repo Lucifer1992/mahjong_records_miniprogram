@@ -3,6 +3,7 @@
 import { RULE_LABELS, DURATION_LABELS, MOOD_EMOJI } from '../../utils/types';
 import { getRecordById, getRecords } from '../../utils/storage';
 import { formatDate, formatDateShort } from '../../utils/date';
+import { isPro } from '../../utils/tier';
 // 海报尺寸（与 WXML canvas width/height 保持一致）
 const POSTER_W = 750;
 const POSTER_H = 1200;
@@ -17,6 +18,8 @@ Page({
         lowest: null,
         totalGames: 0,
         scoreGap: 0,
+        // Pro 解锁：去水印 + 1080P 高清；免费版保留水印（作为转化钩子）
+        isPro: false,
         // canvas / 保存状态
         canvasReady: false,
         saving: false,
@@ -27,6 +30,8 @@ Page({
         formatDateShort
     },
     onLoad(options) {
+        // Pro 解锁 → 海报去水印；免费版保留 "由雀战录生成 · 扫码看战绩" 水印作为转化钩子
+        this.setData({ isPro: isPro() });
         const id = options.id;
         if (id) {
             const record = getRecordById(id);
@@ -124,6 +129,14 @@ Page({
         wx.navigateBack();
     },
     /**
+     * 免费用户点 Pro 升级横幅 → 跳 profile 页
+     *
+     * 不用 navigateTo 避免增加 history 层级（poster 是分享入口，从 profile 升级完会回到首页）
+     */
+    onTapProCta() {
+        wx.switchTab({ url: '/pages/profile/profile' });
+    },
+    /**
      * 拿到 canvas + ctx（如 onReady 还没初始化好，回退重新拿）
      */
     ensureCanvas() {
@@ -160,8 +173,9 @@ Page({
         this.setData({ saving: true });
         try {
             const { canvas, ctx } = await this.ensureCanvas();
-            this.drawPoster(ctx, record, this.data.rankedPlayers, this.data.highest, this.data.lowest, this.data.scoreGap, this.data.totalGames);
-            // 导出 PNG
+            this.drawPoster(ctx, record, this.data.rankedPlayers, this.data.highest, this.data.lowest, this.data.scoreGap, this.data.totalGames, this.data.isPro);
+            // 导出 PNG（Pro 版导出 1080P 高清，免费版 720P）
+            const pixelRatio = this.data.isPro ? 3 : 2;
             const tempPath = await new Promise((resolve, reject) => {
                 wx.canvasToTempFilePath({
                     canvas,
@@ -169,8 +183,8 @@ Page({
                     y: 0,
                     width: POSTER_W,
                     height: POSTER_H,
-                    destWidth: POSTER_W * 2, // 2x 像素密度更清晰
-                    destHeight: POSTER_H * 2,
+                    destWidth: POSTER_W * pixelRatio,
+                    destHeight: POSTER_H * pixelRatio,
                     fileType: 'png',
                     quality: 1,
                     success: (r) => resolve(r.tempFilePath),
@@ -213,8 +227,9 @@ Page({
     },
     /**
      * 绘制海报（纯色块 + 文字，无外部图片依赖）
+     * @param isPro true 时跳过底部 "扫码看战绩" 水印 + 加 PRO 角标；false 保留水印作为转化钩子
      */
-    drawPoster(ctx, record, rankedPlayers, highest, lowest, scoreGap, totalGames) {
+    drawPoster(ctx, record, rankedPlayers, highest, lowest, scoreGap, totalGames, isPro) {
         // 工具：圆角矩形
         const roundRect = (x, y, w, h, r, fill) => {
             ctx.beginPath();
@@ -353,9 +368,19 @@ Page({
         ctx.setLineDash([]);
         text('累计战绩', cardX + 30, footerY + 50, '#9B9A93', 22, 'left');
         text(`${totalGames} 场`, cardX + cardW - 30, footerY + 50, '#4A9D7E', 26, 'right', 'bold');
-        text('由雀战录生成 · 扫码看战绩', 375, footerY + 88, '#9B9A93', 18, 'center');
-        // 9. 海报底部外的小尾巴
+        // 底部水印：免费版保留（作为升级转化钩子）；Pro 版去掉
+        if (!isPro) {
+            text('由雀战录生成 · 扫码看战绩', 375, footerY + 88, '#9B9A93', 18, 'center');
+        }
+        else {
+            // Pro 角标：右上角绿色徽章
+            const tagX = cardX + cardW - 110;
+            const tagY = cardY + 18;
+            roundRect(tagX, tagY, 90, 36, 18, '#4A9D7E');
+            text('PRO', tagX + 45, tagY + 25, '#FFFFFF', 22, 'center', 'bold');
+        }
+        // 9. 海报底部外的小尾巴（Pro 版显示完整品牌，免费版保留 watermark 替代）
         const tailY = cardY + cardH + 40;
-        text('🀄 雀战录 · 记录每一场牌局', 375, tailY, '#9B9A93', 20, 'center');
+        text(isPro ? '🀄 雀战录 · 记录每一场牌局' : '👇 扫码看战绩 · 微信搜「雀战录」', 375, tailY, '#9B9A93', 20, 'center');
     }
 });

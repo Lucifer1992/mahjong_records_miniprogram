@@ -427,7 +427,7 @@
           <view class="recent-name-row">
             <view class="recent-name">{{ item.nickname }}</view>
             <view wx:if="{{ item.nextSeat != null && item.checked && !item.inGame }}"
-                  class="recent-seat-badge seat-{{ item.nextSeat }}">
+                  class="recent-seat-badge recent-seat-{{ item.nextSeat }}">
               {{ item.nextSeat === 'east' ? '东' : item.nextSeat === 'south' ? '南' : item.nextSeat === 'west' ? '西' : '北' }}
             </view>
           </view>

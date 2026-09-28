@@ -14,9 +14,10 @@ import { getFullLunarText } from '../../utils/lunar';
 import { buildMonthAdvice, MonthAdvice } from '../../utils/advice';
 
 interface TabItem {
-  id: 'fortune' | 'calendar';
+  id: 'fortune' | 'calendar' | 'report';
   name: string;
   icon: string;
+  proOnly?: boolean;       // 标记为 Pro 专属 Tab（带 🔒 角标 + 锁定卡）
 }
 
 /** 免费用户看广告解锁完整克星榜的 storage key（24 小时有效） */
@@ -48,6 +49,117 @@ interface DayRecordView extends GameRecord {
   timeText: string;
 }
 
+/** 月度战报（Pro 专属；非 Pro 也算好存在 data 里但 WXML 隐藏细节） */
+interface MonthlyReport {
+  year: number;
+  month: number;
+  totalGames: number;          // 本月参战场次
+  winRate: number;             // 胜率（净胜分>0 的局占比）
+  winRateText: string;
+  netScore: number;            // 本月净胜分
+  netScoreText: string;        // 带 +/- 号
+  mvpNickname: string;         // MVP 昵称（本月同桌陪赢最多的牌友）
+  mvpGames: number;            // MVP 同桌次数
+  topRuleName: string;         // 最常玩玩法
+  topRuleCount: number;
+}
+
+/** 月度趋势：最近 N 月的场次条形图数据 */
+interface MonthlyTrendItem {
+  label: string;               // 显示文字如 "8月"
+  yearMonth: string;           // 数据 key 如 "2026-08"
+  count: number;
+  netScore: number;
+  isCurrent: boolean;          // 是否当月（高亮）
+  max: number;                 // bar 高度比例计算用（统一基线）
+}
+
+/** 本月战报计算：基于 selectedPlayer 视角 */
+function buildMonthlyReport(records: GameRecord[], playerId: string, year: number, month: number): MonthlyReport | null {
+  const monthRecords = records.filter(r => {
+    const d = new Date(r.playedAt);
+    return d.getFullYear() === year && (d.getMonth() + 1) === month &&
+           r.players.some(p => p.playerId === playerId);
+  });
+  if (monthRecords.length === 0) {
+    return null;
+  }
+  let wins = 0;
+  let netScore = 0;
+  let mvpMap = new Map<string, number>();      // 搭档同桌次数
+  let ruleMap = new Map<string, number>();       // 玩法计数
+
+  for (const r of monthRecords) {
+    const me = r.players.find(p => p.playerId === playerId);
+    if (!me) continue;
+    if (me.score > 0) wins++;
+    netScore += me.score;
+    if (r.ruleName) ruleMap.set(r.ruleName, (ruleMap.get(r.ruleName) || 0) + 1);
+    for (const p of r.players) {
+      if (p.playerId === playerId) continue;
+      mvpMap.set(p.nickname, (mvpMap.get(p.nickname) || 0) + 1);
+    }
+  }
+  // MVP：同桌次数最多者
+  let mvpNickname = '-';
+  let mvpGames = 0;
+  mvpMap.forEach((v, k) => {
+    if (v > mvpGames) { mvpGames = v; mvpNickname = k; }
+  });
+  // 玩法：最多者
+  let topRuleName = '-';
+  let topRuleCount = 0;
+  ruleMap.forEach((v, k) => {
+    if (v > topRuleCount) { topRuleCount = v; topRuleName = k; }
+  });
+
+  const winRate = monthRecords.length > 0 ? Math.round((wins / monthRecords.length) * 100) : 0;
+  return {
+    year, month,
+    totalGames: monthRecords.length,
+    winRate,
+    winRateText: `${winRate}%`,
+    netScore,
+    netScoreText: (netScore > 0 ? '+' : '') + netScore,
+    mvpNickname, mvpGames,
+    topRuleName, topRuleCount
+  };
+}
+
+/** 最近 6 月场次趋势（含当前月） */
+function buildMonthlyTrend(records: GameRecord[], playerId: string | undefined, currentYear: number): MonthlyTrendItem[] {
+  const MONTHS_BACK = 5;   // 加上当月 = 6 个月
+  const items: MonthlyTrendItem[] = [];
+  const now = new Date();
+
+  for (let i = MONTHS_BACK; i >= 0; i--) {
+    const d = new Date(currentYear, now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const monthRecords = records.filter(r => {
+      const rd = new Date(r.playedAt);
+      return rd.getFullYear() === y && (rd.getMonth() + 1) === m &&
+             (!playerId || r.players.some(p => p.playerId === playerId));
+    });
+    let net = 0;
+    if (playerId) {
+      for (const r of monthRecords) {
+        const me = r.players.find(p => p.playerId === playerId);
+        if (me) net += me.score;
+      }
+    }
+    items.push({
+      label: `${m}月`,
+      yearMonth: `${y}-${String(m).padStart(2, '0')}`,
+      count: monthRecords.length,
+      netScore: net,
+      isCurrent: i === 0
+    });
+  }
+  const max = Math.max(1, ...items.map(i => i.count));
+  return items.map(i => ({ ...i, max }));
+}
+
 function formatTime(ts: number): string {
   const d = new Date(ts);
   const h = d.getHours().toString().padStart(2, '0');
@@ -57,10 +169,11 @@ function formatTime(ts: number): string {
 
 Page({
   data: {
-    activeTab: 'fortune' as 'fortune' | 'calendar',
+    activeTab: 'fortune' as 'fortune' | 'calendar' | 'report',
     tabs: [
       { id: 'fortune', name: '福星克星', icon: '⭐' },
-      { id: 'calendar', name: '牌局月历', icon: '📅' }
+      { id: 'calendar', name: '牌局月历', icon: '📅' },
+      { id: 'report', name: '月度报表', icon: '📊', proOnly: true }
     ] as TabItem[],
 
     // 福星克星
@@ -89,7 +202,12 @@ Page({
     selectedDay: null as CalendarCell | null,
     selectedDayRecords: [] as DayRecordView[],
     /** 选中日的农历全称，如「八月十五 · 中秋节」 */
-    selectedDayLunar: ''
+    selectedDayLunar: '',
+
+    // ===== Pro 月度报表（解锁后展示；免费版仅显示锁定卡）=====
+    isPro: false,
+    monthlyReport: null as MonthlyReport | null,        // 本月战报
+    monthlyTrend: [] as MonthlyTrendItem[]                // 最近 6 月场次趋势
   },
 
   onLoad() {
@@ -140,6 +258,14 @@ Page({
       ? buildMonthAdvice(records, selectedPlayer.id)
       : null;
 
+    // ====== Pro 月度报表（本月战报 + 最近 6 月趋势）======
+    // 即使非 Pro 也算好，存在 data 里；Pro 时 WXML 显示完整，否则显示锁定卡
+    const proActive = isPro();
+    const monthlyReport = selectedPlayer
+      ? buildMonthlyReport(records, selectedPlayer.id, year, month)
+      : null;
+    const monthlyTrend = buildMonthlyTrend(records, selectedPlayer ? selectedPlayer.id : undefined, year);
+
     this.setData({
       players,
       selectedPlayerId: selectedPlayer?.id || '',
@@ -155,7 +281,10 @@ Page({
       currentMonth: month,
       monthText: `${year}年${month}月`,
       calendarCells: calendar.cells,
-      calendarStats: calendar.stats
+      calendarStats: calendar.stats,
+      isPro: proActive,
+      monthlyReport,
+      monthlyTrend
     });
   },
 
@@ -194,7 +323,12 @@ Page({
   },
 
   onTabChange(e: WechatMiniprogram.TapEvent) {
-    const tab = e.currentTarget.dataset.tab as 'fortune' | 'calendar';
+    const tab = e.currentTarget.dataset.tab as 'fortune' | 'calendar' | 'report';
+    // Pro Tab 切换时：非 Pro 用户直接跳升级引导（已经在 report tab 里也是锁定卡）
+    if (tab === 'report' && !isPro()) {
+      this.setData({ activeTab: 'report' });  // 先切过去显示锁定卡
+      return;
+    }
     this.setData({ activeTab: tab });
   },
 
