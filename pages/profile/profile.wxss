@@ -74,6 +74,103 @@
   line-height: 1;
 }
 
+/* 头像更换按钮：重置 button 默认样式，视觉与原头像完全一致 */
+.avatar-change-btn {
+  position: relative;
+  width: 96rpx;
+  height: 96rpx;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  line-height: normal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.avatar-change-btn::after {
+  border: none;  /* 清掉 button 默认的 1px 边框伪元素 */
+}
+
+/* ===== 换头像半屏面板 ===== */
+.avatar-picker-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+}
+.avatar-picker-mask.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.avatar-picker-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 36rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+.avatar-picker-mask.is-visible .avatar-picker-panel {
+  transform: translateY(0);
+}
+
+.avatar-picker-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1a1a2e;
+  text-align: center;
+  margin-bottom: 28rpx;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24rpx;
+  margin-bottom: 32rpx;
+}
+.avatar-cell {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4rpx solid transparent;
+  box-sizing: border-box;
+}
+.avatar-cell.is-current {
+  border-color: #534AB7;
+}
+.avatar-cell-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.avatar-picker-wechat-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 44rpx;
+  background: #f2f1fb;
+  color: #534AB7;
+  font-size: 30rpx;
+  font-weight: 500;
+  padding: 0;
+  margin: 0;
+}
+.avatar-picker-wechat-btn::after {
+  border: none;
+}
+
 .user-info {
   flex: 1;
   min-width: 0;

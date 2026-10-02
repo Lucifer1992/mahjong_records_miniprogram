@@ -6,8 +6,13 @@
     <view class="user-hero-bg"></view>
     <view class="user-hero-content" bindtap="onUserHeroTap">
       <view class="user-avatar">
-        <image wx:if="{{ accountAvatar }}" class="avatar-img" src="{{ accountAvatar }}" mode="aspectFill" />
-        <text wx:else class="avatar-emoji">{{ isLoggedIn ? '🀄' : '👤' }}</text>
+        <!-- 已登录：点头像拉起换头像面板（内置 20 头像 / 微信头像），catchtap 挡住 hero 整体点击 -->
+        <button wx:if="{{ isLoggedIn }}" class="avatar-change-btn"
+                bindtap="onAvatarTap" catchtap="noop">
+          <image wx:if="{{ accountAvatar }}" class="avatar-img" src="{{ accountAvatar }}" mode="aspectFill" />
+          <text wx:else class="avatar-emoji">🀄</text>
+        </button>
+        <text wx:else class="avatar-emoji">👤</text>
       </view>
       <view class="user-info">
         <view class="user-name-row">
@@ -146,5 +151,20 @@
   </view>
 
 </view>
+<!-- 换头像半屏面板：内置 20 头像九宫格 + 微信头像 -->
+<view class="avatar-picker-mask {{ avatarPickerVisible ? 'is-visible' : '' }}" bindtap="onAvatarPickerClose">
+  <view class="avatar-picker-panel" catchtap="noop">
+    <view class="avatar-picker-title">更换头像</view>
+    <view class="avatar-grid">
+      <view wx:for="{{ avatarList }}" wx:key="*this"
+            class="avatar-cell {{ accountAvatar === item ? 'is-current' : '' }}"
+            data-idx="{{ index + 1 }}" bindtap="onPickBuiltinAvatar">
+        <image class="avatar-cell-img" src="{{ item }}" mode="aspectFill" />
+      </view>
+    </view>
+    <button class="avatar-picker-wechat-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">使用微信头像</button>
+  </view>
+</view>
+
 <!-- 登录抽屉（未登录时由 utils/auth 弹出；登录成功回调刷新页面数据） -->
 <login-drawer id="loginDrawer" bind:loggedin="onLoggedIn" />

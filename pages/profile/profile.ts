@@ -7,13 +7,33 @@ import { getPlayers, getRecords, getSettings, updateSettings, exportAll, importA
 import { getSyncStatus, getPendingCount, syncFull, pullAndMerge, refreshTier, type SyncStatus } from '../../utils/sync';
 import { calcSelfWinRate } from '../../utils/stats';
 import { getTier, isPro, setTier, getFreeWindowDates, type Tier } from '../../utils/tier';
-import { API_BASE, updateNickname, fetchMe, hasToken, clearToken } from '../../utils/api';
+import { API_BASE, updateNickname, fetchMe, hasToken, clearToken, uploadAvatar, updateProfile } from '../../utils/api';
 import { runProUpgradeFlow } from '../../utils/upgrade';
 import { formatDate, formatDateTime } from '../../utils/date';
 import { isDevEnv, loadMockData, hasSnapshot, restoreSnapshot } from '../../utils/mock';
 
 /** 导出备份文件的命名前缀（同时用于识别并清理旧备份） */
 const BACKUP_PREFIX = '雀战录备份_';
+
+/** 内置卡通头像（assets/avatars/avatar-01~20.png），与点牌友页共用同一套资源 */
+const BUILTIN_AVATAR_LIST = Array.from(
+  { length: 20 },
+  (_, i) => `/assets/avatars/avatar-${String(i + 1).padStart(2, '0')}.png`
+);
+
+/**
+ * 解析账户头像展示地址：
+ * - `local:N` → 内置头像包内路径（选内置头像不传图，只存这个标记）
+ * - http 开头 → 完整 URL；否则拼 API_BASE（服务端返回相对路径 /avatars/x）
+ */
+function resolveAvatarSrc(avatar: string): string {
+  if (!avatar) return '';
+  if (avatar.indexOf('local:') === 0) {
+    const idx = parseInt(avatar.slice(6), 10);
+    return idx >= 1 && idx <= 20 ? BUILTIN_AVATAR_LIST[idx - 1] : '';
+  }
+  return avatar.indexOf('http') === 0 ? avatar : API_BASE + avatar;
+}
 
 interface MenuItem {
   id: string;
@@ -141,7 +161,9 @@ Page({
     buildTime: '2026-09-11',
     isLoggedIn: hasToken(),   // 顶栏文案 / 退出登录菜单 按登录态切换
     accountName: '',    // 云端账户昵称（登录后显示）
-    accountAvatar: '',  // 云端头像完整 URL（空 = 显示默认 🀄）
+    accountAvatar: '',  // 已解析的头像展示地址（空 = 显示默认 🀄）
+    avatarPickerVisible: false,  // 换头像半屏面板
+    avatarList: BUILTIN_AVATAR_LIST,
     syncStatus: 'idle' as SyncStatus,
     apiBase: API_BASE,
 
@@ -191,10 +213,10 @@ Page({
     }
     try {
       const me = await fetchMe();
-      const avatar = me.avatar
-        ? (me.avatar.startsWith('http') ? me.avatar : API_BASE + me.avatar)
-        : '';
-      this.setData({ accountName: me.nickname || '', accountAvatar: avatar });
+      this.setData({
+        accountName: me.nickname || '',
+        accountAvatar: resolveAvatarSrc(me.avatar || '')
+      });
     } catch {
       // 静默：显示现有值
     }
@@ -602,6 +624,64 @@ Page({
   /** 拉起登录抽屉（用于"账号"菜单 / 顶栏"登录"提示） */
   promptLoginDrawer() {
     (this as any).selectComponent?.('#loginDrawer')?.show?.();
+  },
+
+  /** 头像按钮兜底：open-type=chooseAvatar 由微信接管，这里只挡冒泡 */
+  noop() { /* 挡 hero 整体点击 */ },
+
+  /**
+   * 换头像 —— 点头像拉起半屏面板：
+   * - 选内置 20 头像：不传图，只把 `local:N` 标记存进 users.avatar（跨设备同步）
+   * - 用微信头像：走 chooseAvatar → 上传服务器（同登录抽屉链路）
+   */
+  onAvatarTap() {
+    if (!hasToken()) {
+      this.promptLoginDrawer();
+      return;
+    }
+    this.setData({ avatarPickerVisible: true });
+  },
+
+  onAvatarPickerClose() {
+    this.setData({ avatarPickerVisible: false });
+  },
+
+  /** 选内置头像：存 `local:N` 标记，图片本身在包内，无需上传 */
+  async onPickBuiltinAvatar(e: WechatMiniprogram.TapEvent) {
+    const idx = Number(e.currentTarget.dataset.idx);
+    if (!(idx >= 1 && idx <= 20)) return;
+
+    try {
+      await updateProfile({ avatar: `local:${idx}` });
+      wx.showToast({ title: '头像已更新', icon: 'success' });
+      this.setData({
+        accountAvatar: BUILTIN_AVATAR_LIST[idx - 1],
+        avatarPickerVisible: false
+      });
+    } catch (err) {
+      console.warn('[profile] 内置头像保存失败', err);
+      wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+    }
+  },
+
+  /** 微信头像：选图（临时文件）→ 上传服务器 → PATCH 云端资料 → 刷新展示 */
+  async onChooseAvatar(e: { detail: { avatarUrl: string } }) {
+    const path = e?.detail?.avatarUrl;
+    if (!path) return;
+
+    wx.showLoading({ title: '更新中...', mask: true });
+    try {
+      const { url } = await uploadAvatar(path);
+      await updateProfile({ avatar: url });
+      wx.hideLoading();
+      wx.showToast({ title: '头像已更新', icon: 'success' });
+      this.setData({ avatarPickerVisible: false });
+      this.refreshAccountAsync();
+    } catch (err) {
+      wx.hideLoading();
+      console.warn('[profile] 头像更新失败', err);
+      wx.showToast({ title: '更新失败，请重试', icon: 'none' });
+    }
   },
 
   // （意见反馈入口已下线：统一走页面底部「联系客服」open-type=contact，双向沟通更好用）
