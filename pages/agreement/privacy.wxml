@@ -145,8 +145,7 @@
       <view class="section-content">
         如你对隐私有任何疑问、投诉或请求，请通过以下方式联系：
         <view class="contact-info">
-          · 微信小程序内"我的"→"意见反馈"<br/>
-          · 邮箱：quezhanlu@example.com<br/>
+          · 微信小程序内"我的"→"联系客服"<br/>
           · 我们会在 <text class="hl">15 个工作日</text>内回复
         </view>
       </view>

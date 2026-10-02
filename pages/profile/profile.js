@@ -7,6 +7,7 @@ import { calcSelfWinRate } from '../../utils/stats';
 import { getTier, isPro, setTier, getFreeWindowDates } from '../../utils/tier';
 import { API_BASE, updateNickname, fetchMe, hasToken, clearToken } from '../../utils/api';
 import { runProUpgradeFlow } from '../../utils/upgrade';
+import { runRefundRequestFlow } from '../../utils/refund';
 import { formatDate, formatDateTime } from '../../utils/date';
 import { isDevEnv, loadMockData, hasSnapshot, restoreSnapshot } from '../../utils/mock';
 /** 导出备份文件的命名前缀（同时用于识别并清理旧备份） */
@@ -72,9 +73,9 @@ function buildMenuSections(tier, windowDates, isLoggedIn) {
             title: '关于',
             items: [
                 { id: 'about', icon: 'ℹ️', iconType: 'info', title: '关于雀战录', desc: '版本 1.0.0 · 2026-09-11', action: 'navigate' },
+                { id: 'refund', icon: '💳', iconType: 'info', title: '售后与退款', desc: 'Pro 付款问题 / 申请退款', action: 'tap' },
                 { id: 'privacy', icon: '🔒', iconType: 'cloud', title: '隐私政策', desc: '了解我们如何保护你的数据', action: 'navigate' },
-                { id: 'terms', icon: '📜', iconType: 'info', title: '用户协议', desc: '使用条款与免责说明', action: 'navigate' },
-                { id: 'feedback', icon: '💬', iconType: 'bell', title: '意见反馈', desc: '在这里写下你的建议', action: 'tap' }
+                { id: 'terms', icon: '📜', iconType: 'info', title: '用户协议', desc: '使用条款与免责说明', action: 'navigate' }
             ]
         },
         {
@@ -154,15 +155,6 @@ Page({
         this.refreshSyncStatus();
         this.refreshTierAsync();
         this.refreshAccountAsync();
-        // 用户点「意见反馈」时未登录 → 登录抽屉刚关闭 → 自动续开反馈抽屉
-        // 用 setTimeout 等登录抽屉的关闭动画走完，避免叠层闪烁
-        if (this.pendingFeedbackAfterLogin) {
-            setTimeout(() => {
-                var _a, _b, _c, _d;
-                this.pendingFeedbackAfterLogin = false;
-                (_d = (_c = (_b = (_a = this).selectComponent) === null || _b === void 0 ? void 0 : _b.call(_a, '#feedbackDrawer')) === null || _c === void 0 ? void 0 : _c.show) === null || _d === void 0 ? void 0 : _d.call(_c);
-            }, 350);
-        }
     },
     /**
      * 拉云端账户信息（昵称/头像）用于顶栏展示
@@ -559,30 +551,7 @@ Page({
         var _a, _b, _c, _d;
         (_d = (_c = (_b = (_a = this).selectComponent) === null || _b === void 0 ? void 0 : _b.call(_a, '#loginDrawer')) === null || _c === void 0 ? void 0 : _c.show) === null || _d === void 0 ? void 0 : _d.call(_c);
     },
-    // ========== 意见反馈 ==========
-    /** 待用户登录后，是否要自动重新打开反馈抽屉 */
-    pendingFeedbackAfterLogin: false,
-    /**
-     * 打开意见反馈抽屉
-     * 必须登录 → 未登录先弹登录抽屉，登录成功后再开
-     */
-    onFeedback() {
-        var _a, _b, _c, _d;
-        if (!requireLogin(this)) {
-            // requireLogin 已弹登录抽屉；登录成功（onLoggedIn）后会再次打开
-            this.pendingFeedbackAfterLogin = true;
-            return;
-        }
-        (_d = (_c = (_b = (_a = this).selectComponent) === null || _b === void 0 ? void 0 : _b.call(_a, '#feedbackDrawer')) === null || _c === void 0 ? void 0 : _c.show) === null || _d === void 0 ? void 0 : _d.call(_c);
-    },
-    /** 反馈抽屉关闭（用户主动关） */
-    onFeedbackClose() {
-        this.pendingFeedbackAfterLogin = false;
-    },
-    /** 反馈提交成功（toast 由 drawer 自己弹，这里仅清理状态） */
-    onFeedbackSuccess() {
-        this.pendingFeedbackAfterLogin = false;
-    },
+    // （意见反馈入口已下线：统一走页面底部「联系客服」open-type=contact，双向沟通更好用）
     /**
      * 退出登录：清掉本地 token + tier 缓存，但不删本地战绩。
      * 云端数据保留（用户重新登录可恢复）。
@@ -701,11 +670,12 @@ Page({
                     confirmText: '好的'
                 });
                 break;
-            case 'feedback':
-                this.onFeedback();
-                break;
             case 'privacy':
                 wx.navigateTo({ url: '/pages/agreement/privacy' });
+                break;
+            case 'refund':
+                // 自助退款：选原因 → 后端分层评估（7 天内未使用自动退 / 其余人工核实 / 超 30 天拒绝）
+                runRefundRequestFlow();
                 break;
             case 'terms':
                 wx.navigateTo({ url: '/pages/agreement/terms' });

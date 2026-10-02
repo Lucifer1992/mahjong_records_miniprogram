@@ -76,7 +76,7 @@ export async function runProUpgradeFlow(onSuccess?: UpgradeSuccessCallback): Pro
     console.log('[upgrade] already Pro');
     wx.showModal({
       title: 'Pro 权益',
-      content: '你已解锁全部 Pro 权益：\n\n· 克星榜全量 + 战绩复盘\n· 月度报表随时看\n· 云端全量保留，不限天数\n· 一次性付费，永久使用',
+      content: '你已解锁全部 Pro 权益：\n\n· 克星榜全量 + 战绩复盘\n· 月度报表随时看\n· 云端全量保留，不限天数\n· AI 复盘点评（即将上线）\n· 一次性付费，永久使用',
       showCancel: false,
       confirmText: '知道了'
     });
@@ -95,10 +95,14 @@ export async function runProUpgradeFlow(onSuccess?: UpgradeSuccessCallback): Pro
   //    ⚠️ wx.showModal 的 confirmText/cancelText 官方限制最多 4 个字符，
   //    超限会导致 API 直接 fail（弹窗完全不出现且无提示）——历史上传
   //    '¥9.9 立即解锁'（9 字符）就静默失败过。价格只能放 title/content。
+  //
+  //    ⚠️ 退款规则必须在支付前显著展示（消法第 26 条格式条款提示义务）：
+  //    这段文字 = 用户点「立即解锁」时同意的分层退款政策（版本由后端记录在订单上），
+  //    是「30 天后拒退」在平台仲裁/投诉时的核心证据。改文案要同步升级后端 REFUND_POLICY_VERSION。
   const confirm = await new Promise<boolean>(resolve => {
     wx.showModal({
       title: '¥9.9 永久解锁 Pro',
-      content: '一次性付费 · 永久使用 · 不订阅\n\n· 克星榜全量 + 战绩复盘解锁\n· 月度报表随时看\n· 云端全量保留，不限天数\n\n战绩分享海报对所有用户免费。\n付款由微信虚拟支付保障，本工具仅供娱乐记录。\n\n虚拟商品，付款后即时生效；如有付款问题请联系客服处理。',
+      content: '一次性付费 · 永久使用 · 不订阅\n\n· 克星榜全量 + 战绩复盘解锁\n· 月度报表随时看\n· 云端全量保留，不限天数\n· AI 复盘点评（即将上线）\n\n战绩分享海报对所有用户免费。\n\n【退款规则】\n· 付款 7 天内未使用 Pro：全额退款\n· 功能故障：48 小时内人工处理\n· 付款超 30 天：不支持退款\n\n确认支付即表示同意上述规则。',
       confirmText: '立即解锁',
       cancelText: '暂不',
       success: (r) => resolve(r.confirm),
@@ -137,7 +141,8 @@ export async function runProUpgradeFlow(onSuccess?: UpgradeSuccessCallback): Pro
   let params;
   try {
     console.log('[upgrade] calling createPrepay with code:', loginCode ? 'yes' : 'no');
-    params = await createPrepay('lifetime', loginCode || undefined);
+    // agreePolicy: 上面弹窗展示了退款规则，用户点「立即解锁」即同意 → 服务端留痕
+    params = await createPrepay('lifetime', loginCode || undefined, true);
     console.log('[upgrade] createPrepay success, signData.env =', JSON.parse(params.signData).env, 'paySig len =', params.paySig.length);
   } catch (e: any) {
     console.warn('[upgrade] prepay failed', e);

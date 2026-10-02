@@ -204,8 +204,10 @@ export function updateProfile(patch: { nickname?: string; avatar?: string }) {
  *
  * @param code 支付前重新 wx.login 换的新 code（服务端刷新 session_key 用，
  *             防止库里的 session_key 过期导致 SIGNATURE_INVALID）
+ * @param agreePolicy 退款政策同意标记 —— 必须传 true（后端 z.literal(true) 强校验，
+ *             服务端把「同意时间 + 政策版本」写入订单，作为退款仲裁证据）
  */
-export function createPrepay(product: 'lifetime', code?: string) {
+export function createPrepay(product: 'lifetime', code?: string, agreePolicy = true) {
   return request<{
     signData: string;
     paySig: string;
@@ -216,7 +218,25 @@ export function createPrepay(product: 'lifetime', code?: string) {
   }>({
     url: '/api/vpay/prepay',
     method: 'POST',
-    data: code ? { product, code } : { product },
+    data: { product, ...(code ? { code } : {}), agreePolicy },
+    showError: false
+  });
+}
+
+/**
+ * 自助申请退款（服务端按分层政策评估，决策即时返回）
+ * 后端自动定位当前账号最近的已支付订单
+ */
+export function requestRefund(category: 'unused' | 'quality' | 'other', reason?: string) {
+  return request<{
+    decision: 'auto_refunded' | 'manual_review' | 'rejected';
+    message: string;
+    daysSincePaid: number;
+    usedAfterPurchase: boolean;
+  }>({
+    url: '/api/vpay/refund-request',
+    method: 'POST',
+    data: { category, ...(reason ? { reason } : {}) },
     showError: false
   });
 }
@@ -279,16 +299,5 @@ export function healthCheck() {
   });
 }
 
-/**
- * 提交意见反馈（必须登录；后端只存文本 + user_id，不收集手机号等敏感信息）
- * - 内容 5-500 字
- * - 每天同用户最多 5 条
- */
-export function submitFeedback(content: string) {
-  return request<{ id: string; createdAt: number }>({
-    url: '/api/feedback',
-    method: 'POST',
-    data: { content },
-    showError: false   // 错误由调用方按业务码提示（避免一刀切 toast）
-  });
-}
+// （意见反馈接口调用已下线：反馈统一走「联系客服」open-type=contact，
+//  后端 /api/feedback 路由同步移除，feedback 表保留不删）

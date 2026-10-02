@@ -86,7 +86,17 @@
           <view class="sub-content">
             我们提供 Pro 终身一档：<text class="hl">¥9.9 一次性付费</text>，按微信虚拟支付计费。
             升级后享：克星榜看全量、战绩永久备份、后续新增 Pro 功能。
-            虚拟支付遵循微信官方规则，订单不可退换。
+          </view>
+        </view>
+        <view class="sub-item">
+          <view class="sub-title">· Pro 退款规则（2026-10-02 生效）</view>
+          <view class="sub-content">
+            Pro 为虚拟服务，支付前会向你显著展示本规则，确认支付即视为同意：<br/>
+            <text class="hl">1）付款 7 天内且未使用 Pro 权益</text>（付款后无新战绩同步至云端）：可申请全额退款，原路退回微信支付；<br/>
+            <text class="hl">2）功能故障 / 产品问题</text>：不受上述期限限制，提交后 48 小时内人工核实，核实属实全额退款；<br/>
+            <text class="hl">3）付款 7 天内已使用</text>或<text class="hl">付款 7~30 天</text>：转人工核实处理；<br/>
+            <text class="hl">4）付款超过 30 天</text>：虚拟服务已持续提供，不支持退款（功能故障除外）。<br/>
+            申请入口：小程序「我的」→「售后与退款」。虚拟支付遵循微信官方规则，退款成功后 Pro 权益同步收回。
           </view>
         </view>
       </view>
@@ -145,8 +155,7 @@
       <view class="section-content">
         如对本协议有任何疑问：
         <view class="contact-info">
-          · 微信小程序内"我的"→"意见反馈"<br/>
-          · 邮箱：quezhanlu@example.com<br/>
+          · 微信小程序内"我的"→"联系客服"<br/>
           · 我们会在 <text class="hl">15 个工作日</text>内回复
         </view>
       </view>
