@@ -1,0 +1,50 @@
+<!-- pages/analysis/report-poster.wxml -->
+<!-- 月度战报海报页：轻预览 + 保存/转发，海报由屏外 canvas 生成 -->
+<view class="page">
+  <view wx:if="{{ report }}" class="preview-wrap">
+    <!-- 预览卡（真实海报以生成的图片为准，这里给轻量摘要） -->
+    <view class="preview-hero">
+      <view class="preview-hero-bg"></view>
+      <view class="preview-hero-content">
+        <view class="preview-brand">🀄 雀战录 · 月度战报</view>
+        <view class="preview-month">{{ report.year }}年{{ report.month }}月 · {{ nickname }}</view>
+      </view>
+    </view>
+
+    <view class="preview-card">
+      <view class="preview-title">{{ report.title.emoji }} {{ report.title.name }}</view>
+      <view class="preview-title-desc">{{ report.title.desc }}</view>
+
+      <view class="preview-grid">
+        <view class="preview-cell">
+          <view class="preview-num">{{ report.totalGames }}</view>
+          <view class="preview-label">参战场次</view>
+        </view>
+        <view class="preview-cell">
+          <view class="preview-num {{ report.netScore >= 0 ? 't-pos' : 't-neg' }}">{{ report.netScoreText }}</view>
+          <view class="preview-label">净胜分</view>
+        </view>
+        <view class="preview-cell">
+          <view class="preview-num {{ report.winRate >= 50 ? 't-pos' : 't-neg' }}">{{ report.winRateText }}</view>
+          <view class="preview-label">胜率</view>
+        </view>
+      </view>
+
+      <view class="preview-note">{{ report.complianceText }}</view>
+    </view>
+
+    <!-- 操作栏：保存为主，转发为次 -->
+    <view class="action-bar">
+      <button class="action-btn btn-save" bindtap="onSaveImage" disabled="{{ saving }}">
+        <text>{{ saving ? '⏳ 生成中…' : '📷 保存战报海报' }}</text>
+      </button>
+      <button class="action-btn btn-share" open-type="share">
+        <text>💬 转发</text>
+      </button>
+    </view>
+    <view class="back-row" bindtap="onBack">‹ 返回复盘</view>
+  </view>
+
+  <!-- 屏外 canvas：海报生成（缓冲区尺寸在 TS 里设） -->
+  <canvas type="2d" id="report-canvas" class="canvas-off-screen"></canvas>
+</view>

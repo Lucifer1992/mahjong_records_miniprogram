@@ -3,6 +3,7 @@
     "pages/index/index",
     "pages/records/records",
     "pages/analysis/analysis",
+    "pages/analysis/report-poster",
     "pages/profile/profile",
     "pages/share/poster",
     "pages/agreement/privacy",

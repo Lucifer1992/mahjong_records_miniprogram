@@ -11,69 +11,11 @@ import { runProUpgradeFlow } from '../../utils/upgrade';
 import { showRewardedAd, grantAdUnlock, isAdUnlocked } from '../../utils/ads';
 import { getFullLunarText } from '../../utils/lunar';
 import { buildMonthAdvice } from '../../utils/advice';
+import { buildMonthlyReport } from '../../utils/monthly-report';
 /** 免费用户看广告解锁完整克星榜的 storage key（24 小时有效） */
 const FORTUNE_UNLOCK_KEY = 'fortuneFull';
 function decorate(list) {
     return (list || []).map(p => (Object.assign(Object.assign({}, p), { winRateText: formatWinRate(p.winRate), netScoreText: formatNetScore(p.netScore) })));
-}
-/** 本月战报计算：基于 selectedPlayer 视角 */
-function buildMonthlyReport(records, playerId, year, month) {
-    const monthRecords = records.filter(r => {
-        const d = new Date(r.playedAt);
-        return d.getFullYear() === year && (d.getMonth() + 1) === month &&
-            r.players.some(p => p.playerId === playerId);
-    });
-    if (monthRecords.length === 0) {
-        return null;
-    }
-    let wins = 0;
-    let netScore = 0;
-    let mvpMap = new Map(); // 搭档同桌次数
-    let ruleMap = new Map(); // 玩法计数
-    for (const r of monthRecords) {
-        const me = r.players.find(p => p.playerId === playerId);
-        if (!me)
-            continue;
-        if (me.score > 0)
-            wins++;
-        netScore += me.score;
-        if (r.ruleName)
-            ruleMap.set(r.ruleName, (ruleMap.get(r.ruleName) || 0) + 1);
-        for (const p of r.players) {
-            if (p.playerId === playerId)
-                continue;
-            mvpMap.set(p.nickname, (mvpMap.get(p.nickname) || 0) + 1);
-        }
-    }
-    // MVP：同桌次数最多者
-    let mvpNickname = '-';
-    let mvpGames = 0;
-    mvpMap.forEach((v, k) => {
-        if (v > mvpGames) {
-            mvpGames = v;
-            mvpNickname = k;
-        }
-    });
-    // 玩法：最多者
-    let topRuleName = '-';
-    let topRuleCount = 0;
-    ruleMap.forEach((v, k) => {
-        if (v > topRuleCount) {
-            topRuleCount = v;
-            topRuleName = k;
-        }
-    });
-    const winRate = monthRecords.length > 0 ? Math.round((wins / monthRecords.length) * 100) : 0;
-    return {
-        year, month,
-        totalGames: monthRecords.length,
-        winRate,
-        winRateText: `${winRate}%`,
-        netScore,
-        netScoreText: (netScore > 0 ? '+' : '') + netScore,
-        mvpNickname, mvpGames,
-        topRuleName, topRuleCount
-    };
 }
 /** 最近 6 月场次趋势（含当前月） */
 function buildMonthlyTrend(records, playerId, currentYear) {
@@ -198,13 +140,24 @@ Page({
         // ====== Pro 月度报表（本月战报 + 最近 6 月趋势）======
         // 即使非 Pro 也算好，存在 data 里；Pro 时 WXML 显示完整，否则显示锁定卡
         const proActive = isPro();
-        const monthlyReport = selectedPlayer
-            ? buildMonthlyReport(records, selectedPlayer.id, year, month)
-            : null;
-        const monthlyTrend = buildMonthlyTrend(records, selectedPlayer ? selectedPlayer.id : undefined, year);
-        this.setData(Object.assign(Object.assign({ players, selectedPlayerId: (selectedPlayer === null || selectedPlayer === void 0 ? void 0 : selectedPlayer.id) || '', selectedPlayerIndex: selectedIdx, analysis, enoughData: records.length >= MIN_GAMES_FOR_ANALYSIS, totalGames,
-            relevantGames, luckyList: decorate(analysis === null || analysis === void 0 ? void 0 : analysis.luckyPartners) }, this.evilView(analysis)), { advice, currentYear: year, currentMonth: month, monthText: `${year}年${month}月`, calendarCells: calendar.cells, calendarStats: calendar.stats, isPro: proActive, monthlyReport,
-            monthlyTrend }));
+        this.setData(Object.assign(Object.assign(Object.assign({ players, selectedPlayerId: (selectedPlayer === null || selectedPlayer === void 0 ? void 0 : selectedPlayer.id) || '', selectedPlayerIndex: selectedIdx, analysis, enoughData: records.length >= MIN_GAMES_FOR_ANALYSIS, totalGames,
+            relevantGames, luckyList: decorate(analysis === null || analysis === void 0 ? void 0 : analysis.luckyPartners) }, this.evilView(analysis)), { advice, currentYear: year, currentMonth: month, monthText: `${year}年${month}月`, calendarCells: calendar.cells, calendarStats: calendar.stats, isPro: proActive }), this.reportView(records, selectedPlayer)));
+    },
+    /**
+     * 月报数据段：按当前月历选中的年月 + 玩家视角重算。
+     * 切换玩家（onPlayerChange / onPickerTap）或翻月（refreshCalendar）也必须重算，
+     * 否则战报还是上一个人 / 上一个月的视角。
+     */
+    reportView(records, selectedPlayer, yearOverride, monthOverride) {
+        const fallback = new Date();
+        const year = yearOverride || this.data.currentYear || fallback.getFullYear();
+        const month = monthOverride || this.data.currentMonth || fallback.getMonth() + 1;
+        return {
+            monthlyReport: selectedPlayer
+                ? buildMonthlyReport(records, selectedPlayer.id, year, month)
+                : null,
+            monthlyTrend: buildMonthlyTrend(records, selectedPlayer ? selectedPlayer.id : undefined, yearOverride || fallback.getFullYear())
+        };
     },
     /**
      * 克星榜分层视图：Pro / 已看广告解锁 → 完整榜；
@@ -243,6 +196,23 @@ Page({
             this.loadData();
         });
     },
+    /**
+     * 生成月度战报海报（Pro 专属）。
+     * 非 Pro 点击 → 直接走升级流程（与克星榜解锁同一模式：入口可见、点了付费）。
+     */
+    onOpenReportPoster() {
+        if (!isPro()) {
+            this.onGoUpgrade();
+            return;
+        }
+        if (!this.data.monthlyReport) {
+            wx.showToast({ title: '本月还没有战绩', icon: 'none' });
+            return;
+        }
+        wx.navigateTo({
+            url: `/pages/analysis/report-poster?year=${this.data.currentYear}&month=${this.data.currentMonth}&playerId=${this.data.selectedPlayerId}`
+        });
+    },
     onTabChange(e) {
         const tab = e.currentTarget.dataset.tab;
         // Pro Tab 切换时：非 Pro 用户直接跳升级引导（已经在 report tab 里也是锁定卡）
@@ -258,10 +228,10 @@ Page({
         const selectedPlayer = this.data.players[idx];
         const analysis = analyzeFortune(records, selectedPlayer.id);
         const relevantGames = records.filter(r => r.players.some(p => p.playerId === selectedPlayer.id)).length;
-        this.setData(Object.assign({ selectedPlayerId: selectedPlayer.id, selectedPlayerIndex: idx, analysis,
+        this.setData(Object.assign(Object.assign({ selectedPlayerId: selectedPlayer.id, selectedPlayerIndex: idx, analysis,
             relevantGames, luckyList: decorate(analysis === null || analysis === void 0 ? void 0 : analysis.luckyPartners), 
             // 宜忌是个人视角的，换人必须重算
-            advice: buildMonthAdvice(records, selectedPlayer.id) }, this.evilView(analysis)));
+            advice: buildMonthAdvice(records, selectedPlayer.id) }, this.evilView(analysis)), this.reportView(records, selectedPlayer)));
     },
     onPrevMonth() {
         const { year, month } = shiftMonth(this.data.currentYear, this.data.currentMonth, -1);
@@ -274,16 +244,8 @@ Page({
     refreshCalendar(year, month) {
         const records = getRecords();
         const calendar = buildCalendar(records, year, month, this.data.selectedPlayerId);
-        this.setData({
-            currentYear: year,
-            currentMonth: month,
-            monthText: `${year}年${month}月`,
-            calendarCells: calendar.cells,
-            calendarStats: calendar.stats,
-            selectedDay: null,
-            selectedDayRecords: [],
-            selectedDayLunar: ''
-        });
+        const selectedPlayer = this.data.players.find(p => p.id === this.data.selectedPlayerId);
+        this.setData(Object.assign({ currentYear: year, currentMonth: month, monthText: `${year}年${month}月`, calendarCells: calendar.cells, calendarStats: calendar.stats, selectedDay: null, selectedDayRecords: [], selectedDayLunar: '' }, this.reportView(records, selectedPlayer, year, month)));
     },
     onDaySelect(e) {
         const date = e.currentTarget.dataset.date;
@@ -334,10 +296,10 @@ Page({
                 const records = getRecords();
                 const analysis = analyzeFortune(records, selectedPlayer.id);
                 const relevantGames = records.filter(r => r.players.some(p => p.playerId === selectedPlayer.id)).length;
-                this.setData(Object.assign({ selectedPlayerId: selectedPlayer.id, selectedPlayerIndex: idx, analysis,
+                this.setData(Object.assign(Object.assign({ selectedPlayerId: selectedPlayer.id, selectedPlayerIndex: idx, analysis,
                     relevantGames, luckyList: decorate(analysis === null || analysis === void 0 ? void 0 : analysis.luckyPartners), 
                     // 宜忌是个人视角的，换人必须重算（与 onPlayerChange 保持一致）
-                    advice: buildMonthAdvice(records, selectedPlayer.id) }, this.evilView(analysis)));
+                    advice: buildMonthAdvice(records, selectedPlayer.id) }, this.evilView(analysis)), this.reportView(records, selectedPlayer)));
             }
         });
     }

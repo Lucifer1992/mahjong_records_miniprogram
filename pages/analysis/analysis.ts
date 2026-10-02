@@ -13,6 +13,7 @@ import { runProUpgradeFlow } from '../../utils/upgrade';
 import { showRewardedAd, grantAdUnlock, isAdUnlocked } from '../../utils/ads';
 import { getFullLunarText } from '../../utils/lunar';
 import { buildMonthAdvice, MonthAdvice } from '../../utils/advice';
+import { buildMonthlyReport, MonthlyReport } from '../../utils/monthly-report';
 
 interface TabItem {
   id: 'fortune' | 'calendar' | 'report';
@@ -50,21 +51,6 @@ interface DayRecordView extends GameRecord {
   timeText: string;
 }
 
-/** 月度战报（Pro 专属；非 Pro 也算好存在 data 里但 WXML 隐藏细节） */
-interface MonthlyReport {
-  year: number;
-  month: number;
-  totalGames: number;          // 本月参战场次
-  winRate: number;             // 胜率（净胜分>0 的局占比）
-  winRateText: string;
-  netScore: number;            // 本月净胜分
-  netScoreText: string;        // 带 +/- 号
-  mvpNickname: string;         // MVP 昵称（本月同桌陪赢最多的牌友）
-  mvpGames: number;            // MVP 同桌次数
-  topRuleName: string;         // 最常玩玩法
-  topRuleCount: number;
-}
-
 /** 月度趋势：最近 N 月的场次条形图数据 */
 interface MonthlyTrendItem {
   label: string;               // 显示文字如 "8月"
@@ -73,58 +59,6 @@ interface MonthlyTrendItem {
   netScore: number;
   isCurrent: boolean;          // 是否当月（高亮）
   max?: number;                // bar 高度比例计算用（统一基线，buildMonthlyTrend 末尾统一回填）
-}
-
-/** 本月战报计算：基于 selectedPlayer 视角 */
-function buildMonthlyReport(records: GameRecord[], playerId: string, year: number, month: number): MonthlyReport | null {
-  const monthRecords = records.filter(r => {
-    const d = new Date(r.playedAt);
-    return d.getFullYear() === year && (d.getMonth() + 1) === month &&
-           r.players.some(p => p.playerId === playerId);
-  });
-  if (monthRecords.length === 0) {
-    return null;
-  }
-  let wins = 0;
-  let netScore = 0;
-  let mvpMap = new Map<string, number>();      // 搭档同桌次数
-  let ruleMap = new Map<string, number>();       // 玩法计数
-
-  for (const r of monthRecords) {
-    const me = r.players.find(p => p.playerId === playerId);
-    if (!me) continue;
-    if (me.score > 0) wins++;
-    netScore += me.score;
-    if (r.ruleName) ruleMap.set(r.ruleName, (ruleMap.get(r.ruleName) || 0) + 1);
-    for (const p of r.players) {
-      if (p.playerId === playerId) continue;
-      mvpMap.set(p.nickname, (mvpMap.get(p.nickname) || 0) + 1);
-    }
-  }
-  // MVP：同桌次数最多者
-  let mvpNickname = '-';
-  let mvpGames = 0;
-  mvpMap.forEach((v, k) => {
-    if (v > mvpGames) { mvpGames = v; mvpNickname = k; }
-  });
-  // 玩法：最多者
-  let topRuleName = '-';
-  let topRuleCount = 0;
-  ruleMap.forEach((v, k) => {
-    if (v > topRuleCount) { topRuleCount = v; topRuleName = k; }
-  });
-
-  const winRate = monthRecords.length > 0 ? Math.round((wins / monthRecords.length) * 100) : 0;
-  return {
-    year, month,
-    totalGames: monthRecords.length,
-    winRate,
-    winRateText: `${winRate}%`,
-    netScore,
-    netScoreText: (netScore > 0 ? '+' : '') + netScore,
-    mvpNickname, mvpGames,
-    topRuleName, topRuleCount
-  };
 }
 
 /** 最近 6 月场次趋势（含当前月） */
@@ -262,10 +196,6 @@ Page({
     // ====== Pro 月度报表（本月战报 + 最近 6 月趋势）======
     // 即使非 Pro 也算好，存在 data 里；Pro 时 WXML 显示完整，否则显示锁定卡
     const proActive = isPro();
-    const monthlyReport = selectedPlayer
-      ? buildMonthlyReport(records, selectedPlayer.id, year, month)
-      : null;
-    const monthlyTrend = buildMonthlyTrend(records, selectedPlayer ? selectedPlayer.id : undefined, year);
 
     this.setData({
       players,
@@ -284,9 +214,30 @@ Page({
       calendarCells: calendar.cells,
       calendarStats: calendar.stats,
       isPro: proActive,
-      monthlyReport,
-      monthlyTrend
+      ...this.reportView(records, selectedPlayer)
     });
+  },
+
+  /**
+   * 月报数据段：按当前月历选中的年月 + 玩家视角重算。
+   * 切换玩家（onPlayerChange / onPickerTap）或翻月（refreshCalendar）也必须重算，
+   * 否则战报还是上一个人 / 上一个月的视角。
+   */
+  reportView(
+    records: GameRecord[],
+    selectedPlayer: Player | undefined,
+    yearOverride?: number,
+    monthOverride?: number
+  ): { monthlyReport: MonthlyReport | null; monthlyTrend: MonthlyTrendItem[] } {
+    const fallback = new Date();
+    const year = yearOverride || this.data.currentYear || fallback.getFullYear();
+    const month = monthOverride || this.data.currentMonth || fallback.getMonth() + 1;
+    return {
+      monthlyReport: selectedPlayer
+        ? buildMonthlyReport(records, selectedPlayer.id, year, month)
+        : null,
+      monthlyTrend: buildMonthlyTrend(records, selectedPlayer ? selectedPlayer.id : undefined, yearOverride || fallback.getFullYear())
+    };
   },
 
   /**
@@ -328,6 +279,24 @@ Page({
     });
   },
 
+  /**
+   * 生成月度战报海报（Pro 专属）。
+   * 非 Pro 点击 → 直接走升级流程（与克星榜解锁同一模式：入口可见、点了付费）。
+   */
+  onOpenReportPoster() {
+    if (!isPro()) {
+      this.onGoUpgrade();
+      return;
+    }
+    if (!this.data.monthlyReport) {
+      wx.showToast({ title: '本月还没有战绩', icon: 'none' });
+      return;
+    }
+    wx.navigateTo({
+      url: `/pages/analysis/report-poster?year=${this.data.currentYear}&month=${this.data.currentMonth}&playerId=${this.data.selectedPlayerId}`
+    });
+  },
+
   onTabChange(e: WechatMiniprogram.TapEvent) {
     const tab = e.currentTarget.dataset.tab as 'fortune' | 'calendar' | 'report';
     // Pro Tab 切换时：非 Pro 用户直接跳升级引导（已经在 report tab 里也是锁定卡）
@@ -355,7 +324,8 @@ Page({
       luckyList: decorate(analysis?.luckyPartners),
       // 宜忌是个人视角的，换人必须重算
       advice: buildMonthAdvice(records, selectedPlayer.id),
-      ...this.evilView(analysis)
+      ...this.evilView(analysis),
+      ...this.reportView(records, selectedPlayer)
     });
   },
 
@@ -372,6 +342,7 @@ Page({
   refreshCalendar(year: number, month: number) {
     const records = getRecords();
     const calendar = buildCalendar(records, year, month, this.data.selectedPlayerId);
+    const selectedPlayer = this.data.players.find(p => p.id === this.data.selectedPlayerId);
     this.setData({
       currentYear: year,
       currentMonth: month,
@@ -380,7 +351,9 @@ Page({
       calendarStats: calendar.stats,
       selectedDay: null,
       selectedDayRecords: [],
-      selectedDayLunar: ''
+      selectedDayLunar: '',
+      // 月报跟随月历选中的月份（与 loadData 的年月口径一致）
+      ...this.reportView(records, selectedPlayer, year, month)
     });
   },
 
@@ -446,7 +419,8 @@ Page({
           luckyList: decorate(analysis?.luckyPartners),
           // 宜忌是个人视角的，换人必须重算（与 onPlayerChange 保持一致）
           advice: buildMonthAdvice(records, selectedPlayer.id),
-          ...this.evilView(analysis)
+          ...this.evilView(analysis),
+          ...this.reportView(records, selectedPlayer)
         });
       }
     });

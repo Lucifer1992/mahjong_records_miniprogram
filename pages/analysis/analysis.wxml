@@ -300,11 +300,15 @@
   <!-- 单独 wx:if，不能用 wx:elif（前面 wx:else 已闭合第一个 if/elif/else 链）-->
   <view wx:if="{{ activeTab === 'report' }}" class="report-tab">
 
-    <!-- 免费用户：显示锁定卡（数据已算好但锁定不展示） -->
+    <!-- 免费用户：显示锁定卡（数据已算好但锁定不展示；teaser 馋一下） -->
     <view wx:if="{{ !isPro }}" class="pro-lock-card">
       <view class="pro-lock-icon">🔒</view>
       <view class="pro-lock-title">月度报表需解锁 Pro</view>
-      <view class="pro-lock-sub">解锁后可查看：每月战报、6 月场次趋势、本月 MVP 牌友</view>
+      <view wx:if="{{ monthlyReport }}" class="pro-lock-teaser">
+        本月你已打了 <text class="pro-lock-teaser-num">{{ monthlyReport.totalGames }}</text> 场牌，
+        战报和专属海报已就绪
+      </view>
+      <view class="pro-lock-sub">解锁后可查看：月度称号战报、黄金时段、方位手气、高光时刻，并生成专属月报海报</view>
       <view class="pro-lock-actions">
         <view class="pro-lock-btn" bindtap="onGoUpgrade">¥9.9 永久解锁</view>
       </view>
@@ -321,6 +325,16 @@
             <text class="section-sub">{{ monthlyReport.year }} 年 {{ monthlyReport.month }} 月</text>
           </view>
         </view>
+
+        <!-- 月度称号横幅 -->
+        <view class="rp-title-banner">
+          <text class="rp-title-emoji">{{ monthlyReport.title.emoji }}</text>
+          <view class="rp-title-text">
+            <text class="rp-title-name">{{ monthlyReport.title.name }}</text>
+            <text class="rp-title-desc">{{ monthlyReport.title.desc }}</text>
+          </view>
+        </view>
+
         <view class="report-grid">
           <view class="report-cell">
             <view class="report-cell-num">{{ monthlyReport.totalGames }}</view>
@@ -344,10 +358,93 @@
             <text class="report-meta-key">最常玩法</text>
             <text class="report-meta-val">{{ monthlyReport.topRuleName }} <text class="report-meta-sub">({{ monthlyReport.topRuleCount }} 局)</text></text>
           </view>
+          <view wx:if="{{ monthlyReport.mom }}" class="report-meta-row">
+            <text class="report-meta-key">较上月</text>
+            <view class="report-meta-val rp-mom">
+              <text>净胜 </text>
+              <text class="rp-mom-delta rp-{{ monthlyReport.mom.netDeltaClass }}">{{ monthlyReport.mom.netDeltaText }}</text>
+              <text class="report-meta-sub"> · 胜率 </text>
+              <text class="rp-mom-delta rp-{{ monthlyReport.mom.winRateDeltaClass }}">{{ monthlyReport.mom.winRateDeltaText }}</text>
+            </view>
+          </view>
         </view>
       </view>
 
       <view wx:else class="empty-mini">本月还没有战绩</view>
+
+      <!-- 手气洞察：黄金时段 + 方位 -->
+      <view wx:if="{{ monthlyReport }}" class="section-gap"></view>
+      <view wx:if="{{ monthlyReport }}" class="section-card">
+        <view class="section-header">
+          <view class="section-icon-wrap section-icon-report">🔍</view>
+          <view class="section-title-wrap">
+            <text class="section-title">手气洞察</text>
+            <text class="section-sub">基于本月真实战绩</text>
+          </view>
+        </view>
+        <view class="rp-insight-label">⏰ 按时段</view>
+        <view class="rp-insight-grid">
+          <view wx:for="{{ monthlyReport.durations }}" wx:key="key"
+                class="rp-insight-cell {{ item.isBest ? 'rp-best' : '' }}">
+            <view class="rp-insight-net {{ item.tone === 'pos' ? 't-success' : item.tone === 'neg' ? 't-danger' : '' }}">{{ item.netScoreText }}</view>
+            <view class="rp-insight-main">{{ item.label }}<text wx:if="{{ item.isBest }}" class="rp-best-tag">旺</text></view>
+            <view class="rp-insight-sub">{{ item.games }} 场 · 胜率 {{ item.winRateText }}</view>
+          </view>
+        </view>
+        <view class="rp-insight-label">🧭 按方位</view>
+        <view class="rp-insight-grid">
+          <view wx:for="{{ monthlyReport.seats }}" wx:key="key"
+                class="rp-insight-cell {{ item.isBest ? 'rp-best' : '' }}">
+            <view class="rp-insight-net {{ item.tone === 'pos' ? 't-success' : item.tone === 'neg' ? 't-danger' : '' }}">{{ item.netScoreText }}</view>
+            <view class="rp-insight-main">坐{{ item.label }}<text wx:if="{{ item.isBest }}" class="rp-best-tag">旺</text></view>
+            <view class="rp-insight-sub">{{ item.games }} 场</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 高光时刻 -->
+      <view wx:if="{{ monthlyReport && (monthlyReport.bestWin || monthlyReport.streakText || monthlyReport.pain) }}" class="section-gap"></view>
+      <view wx:if="{{ monthlyReport && (monthlyReport.bestWin || monthlyReport.streakText || monthlyReport.pain) }}" class="section-card">
+        <view class="section-header">
+          <view class="section-icon-wrap section-icon-trend">⚡</view>
+          <view class="section-title-wrap">
+            <text class="section-title">高光时刻</text>
+            <text class="section-sub">本月的名场面</text>
+          </view>
+        </view>
+        <view class="rp-hl-row" wx:if="{{ monthlyReport.bestWin }}">
+          <text class="rp-hl-icon">💥</text>
+          <view class="rp-hl-body">
+            <view class="rp-hl-line">最大单局 <text class="rp-hl-strong t-success">{{ monthlyReport.bestWin.scoreText }}</text></view>
+            <view class="rp-hl-sub">{{ monthlyReport.bestWin.dateText }} · 同桌 {{ monthlyReport.bestWin.partnersText }}</view>
+          </view>
+        </view>
+        <view class="rp-hl-row" wx:if="{{ monthlyReport.streakText }}">
+          <text class="rp-hl-icon">🔥</text>
+          <view class="rp-hl-body">
+            <view class="rp-hl-line"><text class="rp-hl-strong">{{ monthlyReport.streakText }}</text></view>
+            <view class="rp-hl-sub">连续赢下最多的纪录</view>
+          </view>
+        </view>
+        <view class="rp-hl-row" wx:if="{{ monthlyReport.pain }}">
+          <text class="rp-hl-icon">🥶</text>
+          <view class="rp-hl-body">
+            <view class="rp-hl-line">最扎心对手 <text class="rp-hl-strong t-danger">{{ monthlyReport.pain.nickname }}</text> <text class="t-danger">{{ monthlyReport.pain.netScoreText }}</text></view>
+            <view class="rp-hl-sub">同桌 {{ monthlyReport.pain.games }} 次 · 完整克星榜见「福星克星」</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 月报海报入口（Pro 专属） -->
+      <view wx:if="{{ monthlyReport }}" class="section-gap"></view>
+      <view wx:if="{{ monthlyReport }}" class="rp-poster-cta" bindtap="onOpenReportPoster">
+        <text class="rp-poster-cta-icon">🖼️</text>
+        <view class="rp-poster-cta-text">
+          <text class="rp-poster-cta-title">生成月度战报海报</text>
+          <text class="rp-poster-cta-sub">称号 + 战绩一图流，保存分享到牌友群</text>
+        </view>
+        <text class="rp-poster-cta-arrow">›</text>
+      </view>
 
       <!-- 最近 6 月趋势 -->
       <view class="section-gap"></view>
@@ -375,6 +472,9 @@
           </view>
         </view>
       </view>
+
+      <!-- 合规脚注：全部为历史战绩统计，非预测 -->
+      <view wx:if="{{ monthlyReport }}" class="rp-compliance">{{ monthlyReport.complianceText }}</view>
     </block>
   </view>
 

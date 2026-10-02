@@ -1,0 +1,120 @@
+/* pages/analysis/report-poster.wxss */
+.page {
+  min-height: 100vh;
+  background: var(--color-bg, #F7F5F0);
+  padding-bottom: 60rpx;
+}
+
+.preview-wrap { padding-bottom: env(safe-area-inset-bottom); }
+
+/* 顶部 Hero（与全局风格一致） */
+.preview-hero {
+  position: relative;
+  height: 200rpx;
+  overflow: hidden;
+}
+.preview-hero-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #4A9D7E 0%, #84C9AB 100%);
+}
+.preview-hero-content {
+  position: relative;
+  padding: 40rpx 32rpx 0;
+}
+.preview-brand {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+.preview-month {
+  margin-top: 12rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+/* 预览主卡 */
+.preview-card {
+  margin: -40rpx 24rpx 0;
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 36rpx 32rpx;
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.06);
+}
+.preview-title {
+  text-align: center;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #8A6410;
+}
+.preview-title-desc {
+  text-align: center;
+  font-size: 24rpx;
+  color: #B08F3E;
+  margin-top: 8rpx;
+}
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 32rpx;
+}
+.preview-cell { text-align: center; }
+.preview-num {
+  font-size: 52rpx;
+  font-weight: 700;
+  color: #3B3A36;
+}
+.preview-num.t-pos { color: #C0392B; }
+.preview-num.t-neg { color: #1E8449; }
+.preview-label {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #9B9A93;
+}
+.preview-note {
+  margin-top: 28rpx;
+  text-align: center;
+  font-size: 20rpx;
+  color: #C2C0B8;
+}
+
+/* 操作栏 */
+.action-bar {
+  margin: 36rpx 24rpx 0;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12rpx;
+}
+.action-btn {
+  border-radius: 16rpx !important;
+  font-size: 28rpx;
+  padding: 0;
+  line-height: 92rpx;
+  border: none;
+}
+.action-btn::after { border: none; }
+.btn-save {
+  background: var(--color-primary, #4A9D7E) !important;
+  color: #fff;
+}
+.btn-share {
+  background: #FFFFFF !important;
+  color: #3B3A36;
+  border: 1rpx solid #E8E5DD !important;
+}
+
+.back-row {
+  margin-top: 28rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #9B9A93;
+}
+
+/* 屏外 canvas（缓冲区尺寸 TS 里设，WXML 属性无效） */
+.canvas-off-screen {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 750px;
+  height: 1200px;
+}
