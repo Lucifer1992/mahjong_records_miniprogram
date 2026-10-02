@@ -12,7 +12,7 @@
       <view class="user-info">
         <view class="user-name-row">
           <view class="user-name">{{ accountName || (isLoggedIn ? '雀战录用户' : '未登录') }}</view>
-          <text wx:if="{{ isLoggedIn }}" class="user-name-edit">✏️</text>
+          <text wx:if="{{ isLoggedIn }}" class="user-name-edit" catchtap="onEditNickname">✏️</text>
         </view>
         <view class="user-meta">
           <text wx:if="{{ isLoggedIn }}">{{ totalGames }} 场战绩 · {{ totalPlayers }} 位牌友</text>

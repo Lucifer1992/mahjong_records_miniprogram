@@ -100,6 +100,13 @@
   font-size: 22rpx;
   opacity: 0.7;
   flex-shrink: 0;
+  /* 放大点击热区但不改变视觉布局（padding 用负 margin 抵消） */
+  padding: 16rpx;
+  margin: -16rpx;
+}
+
+.user-name-edit:active {
+  opacity: 1;
 }
 
 .user-meta {

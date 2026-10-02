@@ -603,11 +603,10 @@ Page({
    * （复用 onEditNickname：本地改名 + 云端尽力同步）
    */
   onUserHeroTap() {
+    // 顶栏整体点击只负责「未登录 → 登录」；编辑昵称仅由铅笔图标触发（wxml catchtap）
     if (!hasToken()) {
       this.promptLoginDrawer();
-      return;
     }
-    this.onEditNickname();
   },
 
   /** 拉起登录抽屉（用于"账号"菜单 / 顶栏"登录"提示） */
