@@ -200,7 +200,14 @@ export async function syncFull(records) {
                 tier = res.tier;
             if (typeof res.trimmed === 'number')
                 trimmed += res.trimmed;
-            res.results.filter(r => !r.ok && r.id).forEach(r => failedIds.push(r.id));
+            // 服务端逐条校验的拒绝原因（SCORE_NOT_BALANCED / PLAYER_NOT_FOUND 等）
+            // 之前被直接丢弃，排查「N 条失败」时两头都查不到原因 —— 必须打出来
+            const rejected = res.results.filter(r => !r.ok);
+            if (rejected.length > 0) {
+                console.warn('[sync] 本批失败明细（id + 服务端原因）:', rejected);
+            }
+            rejected.forEach(r => { if (r.id)
+                failedIds.push(r.id); });
         }
         catch (_b) {
             // 整批失败：这些记录全部算失败，重新入队
