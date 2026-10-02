@@ -9,7 +9,6 @@ import { calcSelfWinRate } from '../../utils/stats';
 import { getTier, isPro, setTier, getFreeWindowDates, type Tier } from '../../utils/tier';
 import { API_BASE, updateNickname, fetchMe, hasToken, clearToken } from '../../utils/api';
 import { runProUpgradeFlow } from '../../utils/upgrade';
-import { runRefundRequestFlow } from '../../utils/refund';
 import { formatDate, formatDateTime } from '../../utils/date';
 import { isDevEnv, loadMockData, hasSnapshot, restoreSnapshot } from '../../utils/mock';
 
@@ -89,7 +88,6 @@ function buildMenuSections(tier: Tier, windowDates: number, isLoggedIn: boolean)
       title: '关于',
       items: [
         { id: 'about', icon: 'ℹ️', iconType: 'info' as const, title: '关于雀战录', desc: '版本 1.0.0 · 2026-09-11', action: 'navigate' as const },
-        { id: 'refund', icon: '💳', iconType: 'info' as const, title: '售后与退款', desc: 'Pro 付款问题 / 申请退款', action: 'tap' as const },
         { id: 'privacy', icon: '🔒', iconType: 'cloud' as const, title: '隐私政策', desc: '了解我们如何保护你的数据', action: 'navigate' as const },
         { id: 'terms', icon: '📜', iconType: 'info' as const, title: '用户协议', desc: '使用条款与免责说明', action: 'navigate' as const }
       ]
@@ -734,10 +732,7 @@ Page({
       case 'privacy':
         wx.navigateTo({ url: '/pages/agreement/privacy' });
         break;
-      case 'refund':
-        // 自助退款：选原因 → 后端分层评估（7 天内未使用自动退 / 其余人工核实 / 超 30 天拒绝）
-        runRefundRequestFlow();
-        break;
+      // 退款走客服受理（付款弹窗/用户协议已声明）：自助退款后端接口保留休眠，入口不再暴露
       case 'terms':
         wx.navigateTo({ url: '/pages/agreement/terms' });
         break;
