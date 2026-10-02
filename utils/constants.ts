@@ -98,6 +98,13 @@ export const MAX_PLAYERS = 8;
 export const MIN_PLAYERS = 2;
 
 /**
+ * 换位撤销栈深度上限：保存最近 N 次 swap 前的快照
+ * - 满了丢弃最旧的（FIFO）
+ * - 数字过大会占 storage（每快照 ≈ 200B × 4 人 = 800B）
+ */
+export const UNDO_LIMIT = 5;
+
+/**
  * 分数上下限
  */
 export const SCORE_MIN = -9999;

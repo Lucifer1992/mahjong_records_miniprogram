@@ -148,8 +148,11 @@ export interface Settings {
   /**
    * 上一次记分用的时段（morning / afternoon / evening / overnight）
    * - 新用户没有 → 按本机时间自动判断
+   * - 存在但 lastDurationAt 距今 > 4h → 视为新局，按钟表重新推断
    */
   lastDuration?: GameDuration;
+  /** 时段记忆时刻（毫秒时间戳）：判断「还是同一局延续」还是「新局重新推断」 */
+  lastDurationAt?: number;
 }
 
 /**

@@ -158,7 +158,8 @@
   </view>
 
   <!-- ============ 牌局月历 Tab ============ -->
-  <view wx:else class="calendar-tab">
+  <!-- 独立 wx:if（前面 wx:if 是 fortune 的；用 wx:else 会和它配对，导致 report Tab 选中也走 else）-->
+  <view wx:if="{{ activeTab === 'calendar' }}" class="calendar-tab">
 
     <!-- 月份导航 -->
     <view class="month-nav section-card">
@@ -296,7 +297,8 @@
   </view>
 
   <!-- ============ 月度报表 Tab（Pro 专属）============ -->
-  <view wx:elif="{{ activeTab === 'report' }}" class="report-tab">
+  <!-- 单独 wx:if，不能用 wx:elif（前面 wx:else 已闭合第一个 if/elif/else 链）-->
+  <view wx:if="{{ activeTab === 'report' }}" class="report-tab">
 
     <!-- 免费用户：显示锁定卡（数据已算好但锁定不展示） -->
     <view wx:if="{{ !isPro }}" class="pro-lock-card">

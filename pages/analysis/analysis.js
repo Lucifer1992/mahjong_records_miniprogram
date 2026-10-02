@@ -1,12 +1,13 @@
 // pages/analysis/analysis.ts
 // 分析页 - 福星克星 + 牌局月历
-import { promptLoginIfNeeded } from '../../utils/auth';
+import { promptLoginIfNeeded, requireLogin } from '../../utils/auth';
 import { getRecords, getPlayers, getMe } from '../../utils/storage';
 import { analyzeFortune, formatWinRate, formatNetScore } from '../../utils/fortune';
 import { buildCalendar, shiftMonth } from '../../utils/calendar';
 import { MIN_GAMES_FOR_ANALYSIS } from '../../utils/constants';
 import { formatDate } from '../../utils/date';
 import { isPro } from '../../utils/tier';
+import { runProUpgradeFlow } from '../../utils/upgrade';
 import { showRewardedAd, grantAdUnlock, isAdUnlocked } from '../../utils/ads';
 import { getFullLunarText } from '../../utils/lunar';
 import { buildMonthAdvice } from '../../utils/advice';
@@ -232,9 +233,15 @@ Page({
         wx.showToast({ title: '已解锁 24 小时', icon: 'success' });
         wx.vibrateShort({ type: 'light' });
     },
-    /** 升级 Pro 永久解锁 → 跳「我的」页 */
+    /** 升级 Pro 永久解锁 → 直接走付费流程（不再跳「我的」页） */
     onGoUpgrade() {
-        wx.switchTab({ url: '/pages/profile/profile' });
+        if (!requireLogin(this))
+            return;
+        runProUpgradeFlow(() => {
+            // 支付成功刷新本页 tier（让月度报表 Tab 从锁定卡切到完整内容）
+            this.setData({ isPro: isPro() });
+            this.loadData();
+        });
     },
     onTabChange(e) {
         const tab = e.currentTarget.dataset.tab;

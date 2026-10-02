@@ -24,7 +24,7 @@ export class ApiError extends Error {
   }
 }
 
-function getToken(): string {
+export function getToken(): string {
   return wx.getStorageSync('mahjong:token') || '';
 }
 
@@ -201,8 +201,11 @@ export function updateProfile(patch: { nickname?: string; avatar?: string }) {
 /**
  * 创建 Pro 升级预付订单（双签名 + 道具 ID + 价格 + outTradeNo）
  * 前端拿到后直接调 wx.requestVirtualPayment
+ *
+ * @param code 支付前重新 wx.login 换的新 code（服务端刷新 session_key 用，
+ *             防止库里的 session_key 过期导致 SIGNATURE_INVALID）
  */
-export function createPrepay(product: 'lifetime') {
+export function createPrepay(product: 'lifetime', code?: string) {
   return request<{
     signData: string;
     paySig: string;
@@ -213,7 +216,7 @@ export function createPrepay(product: 'lifetime') {
   }>({
     url: '/api/vpay/prepay',
     method: 'POST',
-    data: { product },
+    data: code ? { product, code } : { product },
     showError: false
   });
 }

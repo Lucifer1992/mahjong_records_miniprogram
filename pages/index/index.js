@@ -2,7 +2,7 @@
 // 首页 - 真实牌桌布局：4 方位头像 + 中央计分弹窗 + 当日累计
 import { promptLoginIfNeeded, requireLogin } from '../../utils/auth';
 import { SEAT_ORDER, SEAT_LABELS } from '../../utils/types';
-import { SUPPORTED_RULES, CUSTOM_RULE_ENTRY, CUSTOM_RULE_NAME_MAX, DURATIONS, MOODS, MIN_PLAYERS, MAX_PLAYERS } from '../../utils/constants';
+import { SUPPORTED_RULES, CUSTOM_RULE_ENTRY, CUSTOM_RULE_NAME_MAX, DURATIONS, MOODS, MIN_PLAYERS, MAX_PLAYERS, UNDO_LIMIT } from '../../utils/constants';
 /** 预设卡通头像列表（assets/avatars/avatar-XX.png，1-20）*/
 export const AVATAR_OPTIONS = Array.from({ length: 20 }, (_, i) => `/assets/avatars/avatar-${String(i + 1).padStart(2, '0')}.png`);
 import { addRecord, findOrCreatePlayer, suggestAvatarIdx, updatePlayerAvatar, getPlayers, getRecords, ensureMe, getMe, rememberLastRuleType, getLastOrDefaultRuleType, getSettings, rememberLastDuration, deletePlayer, getRecentLineups, pickNextSeat, pickNextSeatFrom, uuid } from '../../utils/storage';
@@ -77,6 +77,9 @@ Page({
         // ===== 拖拽换位：长按 0.5s 抬起 → 点其他位置互换 =====
         dragSource: null,
         dragTimer: 0,
+        // ===== 换位撤销栈：保存最近 N 次 players 完整快照，选错位置可一键回退 =====
+        swapHistory: [], // 二维数组：每次换位前的快照
+        canUndoSwap: false, // 计算属性：swapHistory.length > 0
         // ===== 牌桌中央筹码环：开局前隐藏，只在有人开始计分时显示 =====
         hasAnyScore: false,
         // ===== 备注 =====
@@ -102,7 +105,12 @@ Page({
             });
         }
         const settings = getSettings();
-        const durId = settings.lastDuration || inferDurationByClock();
+        // 上次保存的时段「超过 4 小时」视为新局，按钟表重新推断；
+        // 否则视为同一局延续，沿用上次时段（避免凌晨局打完白班重开又跳回 morning 打断用户）
+        const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+        const lastDurAge = settings.lastDurationAt ? Date.now() - settings.lastDurationAt : Infinity;
+        const isContinuation = !!(settings.lastDuration && lastDurAge < FOUR_HOURS_MS);
+        const durId = isContinuation ? settings.lastDuration : inferDurationByClock();
         const durIdx = this.data.durations.findIndex(d => d.id === durId);
         if (durIdx >= 0) {
             this.setData({
@@ -811,19 +819,55 @@ Page({
         // 正常情况：弹计分卡，选中跳到被点的玩家
         this.openScoreModal(seat);
     },
-    /** 对调两个座位的玩家 */
+    /**
+     * 对调两个座位的玩家
+     * - swap 前 push 一次完整快照到 swapHistory（上限 5）
+     * - 撤销栈 + 撤销按钮同步刷新
+     */
     swapSeats(seatA, seatB) {
+        if (seatA === seatB)
+            return;
         const players = [...this.data.players];
         const a = players.find(p => p.seat === seatA);
         const b = players.find(p => p.seat === seatB);
         if (!a || !b)
             return;
+        // 1. 推快照（保存 swap 前的完整状态）
+        const snapshot = players.map(p => (Object.assign({}, p))); // 深拷贝一层即可（结构无嵌套）
+        const newHistory = [...this.data.swapHistory, snapshot].slice(-UNDO_LIMIT);
+        // 2. 互换 seat
         const tmp = a.seat;
         a.seat = b.seat;
         b.seat = tmp;
-        this.setData({ players });
+        this.setData({
+            players,
+            swapHistory: newHistory,
+            canUndoSwap: true
+        });
         this.refreshSeats();
         this.validateScore();
+    },
+    /**
+     * 撤销上一次换位
+     * - 弹出 swapHistory 最后一个快照，覆盖当前 players
+     * - swapHistory 缩短 1；快照耗尽后 canUndoSwap=false（按钮自动隐藏）
+     */
+    onUndoSwap() {
+        if (this.data.swapHistory.length === 0) {
+            wx.showToast({ title: '没有可撤销的操作', icon: 'none' });
+            return;
+        }
+        const newHistory = this.data.swapHistory.slice(0, -1);
+        const restored = this.data.swapHistory[this.data.swapHistory.length - 1];
+        this.setData({
+            players: restored,
+            swapHistory: newHistory,
+            canUndoSwap: newHistory.length > 0
+        });
+        this.refreshSeats();
+        this.validateScore();
+        wx.vibrateShort({ type: 'light' });
+        wx.showToast({ title: '已撤销上一步换位', icon: 'success', duration: 1200 });
     },
     /**
      * 点 + 按钮 → 也弹计分卡（更直接入口）
@@ -1028,7 +1072,12 @@ Page({
         this.refreshDailyStats();
         wx.vibrateShort({ type: 'light' });
         // 关闭弹窗
-        this.setData({ showScoreModal: false });
+        this.setData({
+            showScoreModal: false,
+            // 战绩落库后清空撤销栈：避免下次开局回溯历史战绩被回溯改动
+            swapHistory: [],
+            canUndoSwap: false
+        });
     },
     resetForm() {
         const players = this.data.players.map(p => (Object.assign(Object.assign({}, p), { score: 0, scoreText: '', negative: false })));

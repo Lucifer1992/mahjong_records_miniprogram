@@ -282,11 +282,11 @@
   margin-top: 8rpx;
 }
 
-/* ===== 操作栏 ===== */
+/* ===== 操作栏：保存为主（占 2/3），转发为次 ===== */
 .action-bar {
   margin: 32rpx 24rpx 0;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 2fr 1fr;
   gap: 12rpx;
 }
 
@@ -310,21 +310,78 @@
   transform: scale(0.98);
 }
 
-.btn-share {
+.btn-save {
   background: var(--color-primary) !important;
   color: #fff;
   box-shadow: var(--shadow-primary) !important;
 }
 
-.btn-timeline {
-  background: var(--color-success) !important;
-  color: #fff;
-  box-shadow: 0 6rpx 20rpx rgba(29, 158, 117, 0.25) !important;
+.btn-share {
+  background: var(--color-bg-card) !important;
+  color: var(--color-text);
+  box-shadow: var(--shadow-md) !important;
 }
 
 .btn-icon {
   font-size: 30rpx;
   line-height: 1;
+}
+
+/* ===== 拉新引导页（转发卡片落地） ===== */
+.guest-card {
+  margin: 32rpx 24rpx 0;
+  padding: 48rpx 40rpx;
+  background: var(--color-bg-card);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.guest-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 12rpx;
+}
+
+.guest-sub {
+  font-size: 26rpx;
+  color: var(--color-text-tertiary);
+  margin-bottom: 40rpx;
+}
+
+.guest-points {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-bottom: 48rpx;
+}
+
+.guest-point {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16rpx;
+  padding: 20rpx 28rpx;
+  background: var(--color-bg-tertiary, #F7F5F0);
+  border-radius: 16rpx;
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  text-align: left;
+}
+
+.guest-point-icon {
+  font-size: 32rpx;
+}
+
+.guest-btn {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+  border-radius: 20rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  padding: 24rpx;
+  box-shadow: var(--shadow-primary);
 }
 
 /* ===== 空状态 ===== */

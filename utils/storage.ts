@@ -431,7 +431,10 @@ export function rememberLastRuleType(ruleType: RuleType): void {
  * 记录用户本次保存的时段（首页 onLoad 优先用它作默认选中）
  */
 export function rememberLastDuration(duration: 'morning' | 'afternoon' | 'evening' | 'overnight'): void {
-  updateSettings({ lastDuration: duration });
+  updateSettings({
+    lastDuration: duration,
+    lastDurationAt: Date.now()   // 时段记忆时刻：用于判断「还是同一局延续」还是「新局重新推断」
+  });
 }
 
 /**

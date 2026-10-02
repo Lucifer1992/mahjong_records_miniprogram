@@ -7,7 +7,8 @@ import { getPlayers, getRecords, getSettings, updateSettings, exportAll, importA
 import { getSyncStatus, getPendingCount, syncFull, pullAndMerge, refreshTier, type SyncStatus } from '../../utils/sync';
 import { calcSelfWinRate } from '../../utils/stats';
 import { getTier, isPro, setTier, getFreeWindowDates, type Tier } from '../../utils/tier';
-import { API_BASE, updateNickname, fetchMe, hasToken, createPrepay, getOrder, clearToken } from '../../utils/api';
+import { API_BASE, updateNickname, fetchMe, hasToken, clearToken } from '../../utils/api';
+import { runProUpgradeFlow } from '../../utils/upgrade';
 import { formatDate, formatDateTime } from '../../utils/date';
 import { isDevEnv, loadMockData, hasSnapshot, restoreSnapshot } from '../../utils/mock';
 
@@ -671,153 +672,12 @@ Page({
    * → 升级成功刷新 tier
    */
   async onUpgrade() {
-    if (isPro()) {
-      wx.showModal({
-        title: 'Pro 权益',
-        content: '你已解锁全部 Pro 权益：\n\n· 战绩分享去水印 + 1080P 高清\n· 克星榜全量 + 战绩复盘\n· 云端全量保留，不限天数\n· 一次性付费，永久使用',
-        showCancel: false,
-        confirmText: '知道了'
-      });
-      return;
-    }
-
     if (!requireLogin(this)) return;
-
-    // iOS 微信 ≥ 8.0.68 才能调起虚拟支付（官方硬性要求；旧版本直接调会失败）
-    const sys = wx.getSystemInfoSync();
-    if (sys.platform === 'ios') {
-      const cur = (sys.version || '').split('.').map(n => Number(n) || 0);
-      const base = [8, 0, 68];
-      let blocked = false;
-      for (let i = 0; i < 3; i++) {
-        if (cur[i] > base[i]) break;
-        if (cur[i] < base[i]) { blocked = true; break; }
-      }
-      if (blocked) {
-        wx.showModal({
-          title: '请更新微信',
-          content: 'iOS 端虚拟支付需要微信 8.0.68 及以上版本，请更新后再试。',
-          showCancel: false,
-          confirmText: '知道了'
-        });
-        return;
-      }
-    }
-
-    const confirm = await new Promise<boolean>(resolve => {
-      wx.showModal({
-        title: '¥9.9 永久解锁 Pro',
-        content: '一次性付费 · 永久使用 · 不订阅\n\n· 战绩分享去水印 + 1080P 高清\n· 克星榜全量 + 战绩复盘解锁\n· 云端全量保留，不限天数\n\n付款由微信虚拟支付保障，本工具仅供娱乐记录。',
-        confirmText: '¥9.9 立即解锁',
-        cancelText: '继续免费使用',
-        success: (r) => resolve(r.confirm)
-      });
-    });
-    if (!confirm) return;
-
-    let params;
-    try {
-      params = await createPrepay('lifetime');
-    } catch (e: any) {
-      console.warn('[upgrade] prepay failed', e);
-      const code = e?.code || '';
-      const msg = e?.message || '';
-      // 网络不通和服务端报错要说清楚：前者换网络能救，后者只能重试
-      if (code === 'NETWORK_ERROR' || msg.includes('request:fail') || msg.includes('timeout')) {
-        wx.showModal({
-          title: '连不上服务器',
-          content: `请求超时或被中断，可以换个网络再试（4G ↔ Wi-Fi）。\n\n${msg}`,
-          showCancel: false,
-          confirmText: '知道了'
-        });
-        return;
-      }
-      if (msg.includes('SESSION_KEY_MISSING') || msg.includes('登录')) {
-        wx.showToast({ title: '请重新登录后支付', icon: 'none' });
-      } else {
-        wx.showToast({ title: '创建订单失败，请稍后重试', icon: 'none' });
-      }
-      return;
-    }
-
-    // 唤起微信虚拟支付（双签名 + 道具 ID + 价格已由后端返回）
-    const payRes = await new Promise<{ ok: boolean; err?: string }>(resolve => {
-      // 参数对齐虚拟支付官方签名约定
-      (wx as any).requestVirtualPayment({
-        ...params,
-        mode: 'short_series_goods',
-        success: () => resolve({ ok: true }),
-        fail: (err: any) => resolve({ ok: false, err: err?.errMsg || '支付失败' })
-      });
-    });
-
-    if (!payRes.ok) {
-      // 用户取消 / 系统错误：不弹错误，按钮可点重试
-      console.warn('[upgrade] wx.requestVirtualPayment failed', payRes.err);
-      return;
-    }
-
-    // 支付客户端成功 ≠ 履约完成，需要轮询等推送发货
-    this.pollOrderUntilPaid(params.outTradeNo);
-  },
-
-  /**
-   * 订单轮询：每 ~1.2s 查一次 /order/:outTradeNo，命中 status='paid' 即升级成功
-   *
-   * ⚠️ 必须按「墙钟时间」收口，不能只数轮数：
-   * 网络不通时每一次 getOrder 会挂满 api.ts 的 15s timeout，
-   * 原来的 30 轮 × 15s = 最长 7 分半被 loading 遮罩卡住，用户会以为点了个假按钮。
-   */
-  async pollOrderUntilPaid(outTradeNo: string) {
-    const DEADLINE_MS = 20000;   // 整体上限（回调推送正常 1-3 秒，20 秒足够兜底）
-    const INTERVAL_MS = 1200;    // 轮询间隔
-    const CALL_CAP_MS = 3000;    // 单次查单上限，超时就丢掉这一轮再试
-
-    const started = Date.now();
-    let paid = false;
-    wx.showLoading({ title: '等待支付确认…', mask: true });
-
-    try {
-      while (Date.now() - started < DEADLINE_MS) {
-        await new Promise(r => setTimeout(r, INTERVAL_MS));
-        try {
-          const order = await this.getOrderCapped(outTradeNo, CALL_CAP_MS);
-          if (order.status === 'paid') {
-            paid = true;
-            break;
-          }
-        } catch {
-          // 单次失败不中断轮询
-        }
-      }
-    } finally {
-      wx.hideLoading();
-    }
-
-    if (paid) {
-      setTier('pro');
+    await runProUpgradeFlow(() => {
+      // 支付成功后刷新页面 tier 状态
       this.applyTier();
       this.refreshTierAsync();
-      wx.showToast({ title: '升级成功 🎉', icon: 'success', duration: 1500 });
-      return;
-    }
-
-    wx.showModal({
-      title: '支付确认中',
-      content: `订单 ${outTradeNo} 暂未到账，可能是支付回调延迟。\n如已扣款，刷新本页或稍后回来即可。`,
-      showCancel: false,
-      confirmText: '知道了'
     });
-  },
-
-  /** 单次查单 + 硬性时间上限（被 race 丢弃的请求仍会在后台跑，但不再拖住轮询） */
-  getOrderCapped(outTradeNo: string, capMs: number): Promise<{ status: 'created' | 'paid' }> {
-    return Promise.race([
-      getOrder(outTradeNo),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('ORDER_QUERY_TIMEOUT')), capMs)
-      )
-    ]);
   },
 
   // ========== 我的昵称 ==========

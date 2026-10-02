@@ -493,6 +493,20 @@
 }
 
 /* ===== 底部 ===== */
+.contact-btn {
+  margin: 24rpx 24rpx 0;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  font-size: 26rpx;
+  color: #8A8A9E;
+  text-align: center;
+  line-height: 88rpx;
+  padding: 0;
+}
+.contact-btn::after {
+  border: none;
+}
+
 .footer {
   margin-top: 48rpx;
   text-align: center;

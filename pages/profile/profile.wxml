@@ -83,11 +83,15 @@
     <view class="tier-body">
       <view class="tier-line">
         <text class="tier-dot"></text>
-        <text class="tier-line-text">{{ isPro ? '战绩分享去水印 + 1080P 高清' : '战绩分享带水印（升级去水印）' }}</text>
+        <text class="tier-line-text">战绩分享海报 + 小程序码（所有人免费）</text>
       </view>
       <view class="tier-line">
         <text class="tier-dot"></text>
         <text class="tier-line-text">{{ isPro ? '克星榜全量 + 战绩复盘解锁' : '克星榜仅看 TOP1（升级看全部）' }}</text>
+      </view>
+      <view class="tier-line">
+        <text class="tier-dot"></text>
+        <text class="tier-line-text">{{ isPro ? '月度报表随时看' : '月度报表（升级解锁）' }}</text>
       </view>
       <view class="tier-line">
         <text class="tier-dot"></text>
@@ -124,6 +128,9 @@
       </view>
     </view>
   </view>
+
+  <!-- 联系客服：open-type=contact 唤起微信官方客服会话（付款问题/退款咨询入口） -->
+  <button class="contact-btn" open-type="contact" session-from="profile">💬 联系客服</button>
 
   <!-- 底部 -->
   <view class="footer">

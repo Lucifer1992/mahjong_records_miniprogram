@@ -14,7 +14,7 @@ export class ApiError extends Error {
         this.status = status;
     }
 }
-function getToken() {
+export function getToken() {
     return wx.getStorageSync('mahjong:token') || '';
 }
 export function setToken(token) {
@@ -167,12 +167,15 @@ export function updateProfile(patch) {
 /**
  * 创建 Pro 升级预付订单（双签名 + 道具 ID + 价格 + outTradeNo）
  * 前端拿到后直接调 wx.requestVirtualPayment
+ *
+ * @param code 支付前重新 wx.login 换的新 code（服务端刷新 session_key 用，
+ *             防止库里的 session_key 过期导致 SIGNATURE_INVALID）
  */
-export function createPrepay(product) {
+export function createPrepay(product, code) {
     return request({
         url: '/api/vpay/prepay',
         method: 'POST',
-        data: { product },
+        data: code ? { product, code } : { product },
         showError: false
     });
 }

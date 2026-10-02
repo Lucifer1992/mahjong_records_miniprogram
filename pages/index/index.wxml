@@ -1,6 +1,12 @@
 <!-- pages/index/index.wxml -->
 <view class="page">
 
+  <!-- 换位撤销按钮（仅 canUndoSwap=true 时显示；位于右上角悬浮） -->
+  <view wx:if="{{ canUndoSwap }}" class="undo-fab" bindtap="onUndoSwap" hover-class="undo-fab-active">
+    <text class="undo-fab-icon">↶</text>
+    <text class="undo-fab-text">撤销 ({{ swapHistory.length }})</text>
+  </view>
+
   <!-- 顶部 Hero 区 -->
   <view class="hero">
     <view class="hero-bg"></view>
