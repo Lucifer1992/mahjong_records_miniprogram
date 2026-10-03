@@ -9,7 +9,7 @@ import { addRecord, findOrCreatePlayer, suggestAvatarIdx, updatePlayerAvatar, ge
 import { playerAvatarIdx, playerAvatarSrc, builtinAvatarSrc } from '../../utils/avatar';
 import { updateProfile } from '../../utils/api';
 import { isPro } from '../../utils/tier';
-import { adEnabled, adUnitId } from '../../utils/ads';
+import { adEnabled, adUnitId, isAdUnlocked, FORTUNE_UNLOCK_KEY } from '../../utils/ads';
 import { inferDurationByClock } from '../../utils/duration';
 import { formatDateShort, formatDateTime } from '../../utils/date';
 import { enqueuePush, tryAutoSync } from '../../utils/sync';
@@ -220,8 +220,10 @@ Page({
     /**
      * 计算当前每个玩家的克星标记位（playerId 集合）
      *
-     * MVP 简化：从 records 里反向查找「自己输了、对方赢了」的对局胜率 < 35% 的对手。
-     * 真正的克星算法在 analysis 页，这里只做轻量近似。
+     * 轻量近似：从 records 反查「和我同场时我赢率 < 35%」的对手（至少 3 局）。
+     * ⚠️ 分层与复盘页对齐（2026-10-03 修复：之前免费用户也全量标记， exposing 完整克星榜）：
+     * - Pro：全部克星
+     * - 免费：只亮最克的那位（TOP1）；看激励视频解锁后 24h 全量（与复盘页同一 key）
      */
     computeEvilIds() {
         const records = getRecords();
@@ -255,6 +257,21 @@ Page({
                 evil.add(id);
             }
         });
+        // 分层：免费用户只保留我赢率最低的 TOP1
+        if (!isPro() && !isAdUnlocked(FORTUNE_UNLOCK_KEY)) {
+            let worstId = '';
+            let worstRate = 1;
+            evil.forEach(id => {
+                const v = stats.get(id);
+                if (v.myWins / v.games < worstRate) {
+                    worstRate = v.myWins / v.games;
+                    worstId = id;
+                }
+            });
+            evil.clear();
+            if (worstId)
+                evil.add(worstId);
+        }
         return evil;
     },
     refreshDailyStats() {

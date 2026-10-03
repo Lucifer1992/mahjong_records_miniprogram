@@ -10,7 +10,7 @@ import { MIN_GAMES_FOR_ANALYSIS } from '../../utils/constants';
 import { formatDate } from '../../utils/date';
 import { isPro } from '../../utils/tier';
 import { runProUpgradeFlow } from '../../utils/upgrade';
-import { showRewardedAd, grantAdUnlock, isAdUnlocked, adEnabled, adUnitId } from '../../utils/ads';
+import { showRewardedAd, grantAdUnlock, isAdUnlocked, adEnabled, adUnitId, FORTUNE_UNLOCK_KEY } from '../../utils/ads';
 import { getFullLunarText } from '../../utils/lunar';
 import { buildMonthAdvice, MonthAdvice } from '../../utils/advice';
 import { buildMonthlyReport, MonthlyReport } from '../../utils/monthly-report';
@@ -22,8 +22,7 @@ interface TabItem {
   proOnly?: boolean;       // 标记为 Pro 专属 Tab（带 🔒 角标 + 锁定卡）
 }
 
-/** 免费用户看广告解锁完整克星榜的 storage key（24 小时有效） */
-const FORTUNE_UNLOCK_KEY = 'fortuneFull';
+/** 免费解锁 key 已收口到 utils/ads（FORTUNE_UNLOCK_KEY），此文件直接导入使用 */
 
 /**
  * 列表展示用的视图模型：把胜率 / 净胜分提前格式化成字符串

@@ -8,12 +8,10 @@ import { MIN_GAMES_FOR_ANALYSIS } from '../../utils/constants';
 import { formatDate } from '../../utils/date';
 import { isPro } from '../../utils/tier';
 import { runProUpgradeFlow } from '../../utils/upgrade';
-import { showRewardedAd, grantAdUnlock, isAdUnlocked, adEnabled, adUnitId } from '../../utils/ads';
+import { showRewardedAd, grantAdUnlock, isAdUnlocked, adEnabled, adUnitId, FORTUNE_UNLOCK_KEY } from '../../utils/ads';
 import { getFullLunarText } from '../../utils/lunar';
 import { buildMonthAdvice } from '../../utils/advice';
 import { buildMonthlyReport } from '../../utils/monthly-report';
-/** 免费用户看广告解锁完整克星榜的 storage key（24 小时有效） */
-const FORTUNE_UNLOCK_KEY = 'fortuneFull';
 function decorate(list) {
     return (list || []).map(p => (Object.assign(Object.assign({}, p), { winRateText: formatWinRate(p.winRate), netScoreText: formatNetScore(p.netScore) })));
 }

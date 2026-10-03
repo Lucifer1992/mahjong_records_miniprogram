@@ -78,6 +78,8 @@ export function showRewardedAd() {
 }
 // ========== 看广告 → 限时解锁 ==========
 const AD_UNLOCK_KEY = 'mahjong:ad-unlock';
+/** 免费用户看激励视频解锁「完整克星榜」的 storage key（24h，复盘页/首页共用） */
+export const FORTUNE_UNLOCK_KEY = 'fortuneFull';
 function readUnlocks() {
     try {
         return wx.getStorageSync(AD_UNLOCK_KEY) || {};
