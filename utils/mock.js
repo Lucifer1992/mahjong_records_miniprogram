@@ -293,10 +293,10 @@ export function generateMockData(seed = 20260913) {
     return { records, players };
 }
 // ========== 环境判断 / 读写 ==========
-/** 只有非 release 包才显示「开发者选项」 */
+/** 只有开发者工具（develop）才显示「开发者选项」；体验版/正式版一律隐藏 */
 export function isDevEnv() {
     try {
-        return wx.getAccountInfoSync().miniProgram.envVersion !== 'release';
+        return wx.getAccountInfoSync().miniProgram.envVersion === 'develop';
     }
     catch (e) {
         return false;
