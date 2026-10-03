@@ -155,6 +155,9 @@
       <text class="empty-title">还没有玩家</text>
       <text class="empty-subtitle">先去首页添加玩家并记录战绩吧</text>
     </view>
+
+    <!-- 广告：仅免费用户（Pro 免广告），福星克星 Tab 底部 -->
+    <ad wx:if="{{ showFortuneAd }}" unit-id="{{ bannerUnitId }}" class="ad-banner"></ad>
   </view>
 
   <!-- ============ 牌局月历 Tab ============ -->
@@ -294,16 +297,19 @@
       <text class="empty-title">还没有战绩</text>
       <text class="empty-subtitle">去首页记录你的第一场牌局吧</text>
     </view>
+
+    <!-- 广告：仅免费用户（Pro 免广告），牌局月历 Tab 底部 -->
+    <ad wx:if="{{ showCalendarAd }}" unit-id="{{ bannerUnitId }}" class="ad-banner"></ad>
   </view>
 
-  <!-- ============ 月度报表 Tab（Pro 专属）============ -->
+  <!-- ============ 月度战报 Tab（Pro 专属）============ -->
   <!-- 单独 wx:if，不能用 wx:elif（前面 wx:else 已闭合第一个 if/elif/else 链）-->
   <view wx:if="{{ activeTab === 'report' }}" class="report-tab">
 
     <!-- 免费用户：显示锁定卡（数据已算好但锁定不展示；teaser 馋一下） -->
     <view wx:if="{{ !isPro }}" class="pro-lock-card">
       <view class="pro-lock-icon">🔒</view>
-      <view class="pro-lock-title">月度报表需解锁 Pro</view>
+      <view class="pro-lock-title">月度战报需解锁 Pro</view>
       <view wx:if="{{ monthlyReport }}" class="pro-lock-teaser">
         本月你已打了 <text class="pro-lock-teaser-num">{{ monthlyReport.totalGames }}</text> 场牌，
         战报和专属海报已就绪
@@ -314,7 +320,7 @@
       </view>
     </view>
 
-    <!-- Pro 用户：显示完整月度报表 -->
+    <!-- Pro 用户：显示完整月度战报 -->
     <block wx:else>
       <!-- 本月战报 -->
       <view wx:if="{{ monthlyReport }}" class="section-card">
@@ -476,6 +482,9 @@
       <!-- 合规脚注：全部为历史战绩统计，非预测 -->
       <view wx:if="{{ monthlyReport }}" class="rp-compliance">{{ monthlyReport.complianceText }}</view>
     </block>
+
+    <!-- 广告：仅免费用户（Pro 免广告），月度战报 Tab 底部（免费用户在锁定卡下方） -->
+    <ad wx:if="{{ showReportAd }}" unit-id="{{ bannerUnitId }}" class="ad-banner"></ad>
   </view>
 
 </view>

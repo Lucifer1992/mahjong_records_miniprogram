@@ -93,7 +93,7 @@ function buildMenuSections(tier: Tier, windowDates: number, isLoggedIn: boolean)
     {
       title: '数据管理',
       items: [
-        { id: 'review', icon: '📊', iconType: 'success' as const, title: '战绩复盘', desc: '克星/福星/月度报表', action: 'switchTab' as const },
+        { id: 'review', icon: '📊', iconType: 'success' as const, title: '战绩复盘', desc: '克星/福星/月度战报', action: 'switchTab' as const },
         { id: 'export', icon: '📤', iconType: 'cloud' as const, title: '导出战绩', desc: '转发到微信聊天，可长期保存', action: 'tap' as const },
         { id: 'clear', icon: '🗑️', iconType: 'warning' as const, title: '清空数据', desc: '删除所有战绩和玩家，不可恢复', action: 'tap' as const }
       ]
@@ -808,7 +808,7 @@ Page({
       case 'about':
         wx.showModal({
           title: '雀战录 v1.0.0',
-          content: '麻将战绩记录 + 数据复盘工具\n\n主打功能：\n·• 战绩复盘（克星/福星/月度报表）\n·• 牌局月历\n·• 战绩分享卡\n\n📅 2026-09-11',
+          content: '麻将战绩记录 + 数据复盘工具\n\n主打功能：\n·• 战绩复盘（克星/福星/月度战报）\n·• 牌局月历\n·• 战绩分享卡\n\n📅 2026-09-11',
           showCancel: false,
           confirmText: '好的'
         });

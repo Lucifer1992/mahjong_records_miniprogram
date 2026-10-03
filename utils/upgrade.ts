@@ -76,7 +76,7 @@ export async function runProUpgradeFlow(onSuccess?: UpgradeSuccessCallback): Pro
     console.log('[upgrade] already Pro');
     wx.showModal({
       title: 'Pro 权益',
-      content: '你已解锁全部 Pro 权益：\n\n· 克星榜全量 + 战绩复盘\n· 月度报表随时看\n· 云端全量保留，不限天数\n· AI 复盘点评（即将上线）\n· 一次性付费，永久使用',
+      content: '你已解锁全部 Pro 权益：\n\n· 克星榜全量 + 战绩复盘\n· 月度战报随时看\n· 云端全量保留，不限天数\n· AI 复盘点评（即将上线）\n· 一次性付费，永久使用',
       showCancel: false,
       confirmText: '知道了'
     });
@@ -102,7 +102,7 @@ export async function runProUpgradeFlow(onSuccess?: UpgradeSuccessCallback): Pro
   const confirm = await new Promise<boolean>(resolve => {
     wx.showModal({
       title: '¥9.9 永久解锁 Pro',
-      content: '一次性付费 · 永久使用 · 不订阅\n\n· 克星榜全量 + 战绩复盘解锁\n· 月度报表随时看\n· 云端全量保留，不限天数\n· AI 复盘点评（即将上线）\n\n战绩分享海报对所有用户免费。\n\n【退款规则】\n· 付款 7 天内未使用 Pro：全额退款\n· 功能故障：48 小时内人工处理\n· 付款超 30 天：不支持退款\n退款通过「联系客服」受理，原路退回。\n\n确认支付即表示同意上述规则。',
+      content: '一次性付费 · 永久使用 · 不订阅\n\n· 克星榜全量 + 战绩复盘解锁\n· 月度战报随时看\n· 云端全量保留，不限天数\n· AI 复盘点评（即将上线）\n\n战绩分享海报对所有用户免费。\n\n【退款规则】\n· 付款 7 天内未使用 Pro：全额退款\n· 功能故障：48 小时内人工处理\n· 付款超 30 天：不支持退款\n退款通过「联系客服」受理，原路退回。\n\n确认支付即表示同意上述规则。',
       confirmText: '立即解锁',
       cancelText: '暂不',
       success: (r) => resolve(r.confirm),

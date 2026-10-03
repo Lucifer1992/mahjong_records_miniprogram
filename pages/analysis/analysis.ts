@@ -10,7 +10,7 @@ import { MIN_GAMES_FOR_ANALYSIS } from '../../utils/constants';
 import { formatDate } from '../../utils/date';
 import { isPro } from '../../utils/tier';
 import { runProUpgradeFlow } from '../../utils/upgrade';
-import { showRewardedAd, grantAdUnlock, isAdUnlocked } from '../../utils/ads';
+import { showRewardedAd, grantAdUnlock, isAdUnlocked, adEnabled, adUnitId } from '../../utils/ads';
 import { getFullLunarText } from '../../utils/lunar';
 import { buildMonthAdvice, MonthAdvice } from '../../utils/advice';
 import { buildMonthlyReport, MonthlyReport } from '../../utils/monthly-report';
@@ -108,7 +108,7 @@ Page({
     tabs: [
       { id: 'fortune', name: '福星克星', icon: '⭐' },
       { id: 'calendar', name: '牌局月历', icon: '📅' },
-      { id: 'report', name: '月度报表', icon: '📊', proOnly: true }
+      { id: 'report', name: '月度战报', icon: '📊', proOnly: true }
     ] as TabItem[],
 
     // 福星克星
@@ -139,7 +139,7 @@ Page({
     /** 选中日的农历全称，如「八月十五 · 中秋节」 */
     selectedDayLunar: '',
 
-    // ===== Pro 月度报表（解锁后展示；免费版仅显示锁定卡）=====
+    // ===== Pro 月度战报（解锁后展示；免费版仅显示锁定卡）=====
     isPro: false,
     monthlyReport: null as MonthlyReport | null,        // 本月战报
     monthlyTrend: [] as MonthlyTrendItem[]                // 最近 6 月场次趋势
@@ -193,7 +193,7 @@ Page({
       ? buildMonthAdvice(records, selectedPlayer.id)
       : null;
 
-    // ====== Pro 月度报表（本月战报 + 最近 6 月趋势）======
+    // ====== Pro 月度战报（本月战报 + 最近 6 月趋势）======
     // 即使非 Pro 也算好，存在 data 里；Pro 时 WXML 显示完整，否则显示锁定卡
     const proActive = isPro();
 
@@ -214,6 +214,11 @@ Page({
       calendarCells: calendar.cells,
       calendarStats: calendar.stats,
       isPro: proActive,
+      // Banner 广告：仅免费用户，三个 Tab 各一个（Tab 互斥，同屏密度 = 1）
+      showFortuneAd: adEnabled('fortuneBanner', proActive),
+      showCalendarAd: adEnabled('calendarBanner', proActive),
+      showReportAd: adEnabled('reportBanner', proActive),
+      bannerUnitId: adUnitId('fortuneBanner'),
       ...this.reportView(records, selectedPlayer)
     });
   },
@@ -273,7 +278,7 @@ Page({
   onGoUpgrade() {
     if (!requireLogin(this)) return;
     runProUpgradeFlow(() => {
-      // 支付成功刷新本页 tier（让月度报表 Tab 从锁定卡切到完整内容）
+      // 支付成功刷新本页 tier（让月度战报 Tab 从锁定卡切到完整内容）
       this.setData({ isPro: isPro() });
       this.loadData();
     });

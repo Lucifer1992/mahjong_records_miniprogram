@@ -109,7 +109,7 @@
       <view class="pro-cta-icon">✨</view>
       <view class="pro-cta-text">
         <text class="pro-cta-title">升级 Pro · 深度复盘</text>
-        <text class="pro-cta-sub">月度报表 · 克星榜全量 · 云端全量备份</text>
+        <text class="pro-cta-sub">月度战报 · 克星榜全量 · 云端全量备份</text>
       </view>
       <text class="pro-cta-arrow">›</text>
     </view>
@@ -117,7 +117,7 @@
     <!-- Pro 用户：已解锁提示 -->
     <view wx:if="{{ isPro }}" class="pro-active">
       <text class="pro-active-icon">✓</text>
-      <text class="pro-active-text">Pro 已解锁 · 月度报表 / 克星榜全量 / 云端备份</text>
+      <text class="pro-active-text">Pro 已解锁 · 月度战报 / 克星榜全量 / 云端备份</text>
     </view>
 
     <!-- 操作栏：保存图片为主（拉新主通道），转发好友为次；朋友圈走右上角菜单 -->

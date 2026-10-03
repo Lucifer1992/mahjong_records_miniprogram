@@ -8,7 +8,7 @@ import { MIN_GAMES_FOR_ANALYSIS } from '../../utils/constants';
 import { formatDate } from '../../utils/date';
 import { isPro } from '../../utils/tier';
 import { runProUpgradeFlow } from '../../utils/upgrade';
-import { showRewardedAd, grantAdUnlock, isAdUnlocked } from '../../utils/ads';
+import { showRewardedAd, grantAdUnlock, isAdUnlocked, adEnabled, adUnitId } from '../../utils/ads';
 import { getFullLunarText } from '../../utils/lunar';
 import { buildMonthAdvice } from '../../utils/advice';
 import { buildMonthlyReport } from '../../utils/monthly-report';
@@ -62,7 +62,7 @@ Page({
         tabs: [
             { id: 'fortune', name: '福星克星', icon: '⭐' },
             { id: 'calendar', name: '牌局月历', icon: '📅' },
-            { id: 'report', name: '月度报表', icon: '📊', proOnly: true }
+            { id: 'report', name: '月度战报', icon: '📊', proOnly: true }
         ],
         // 福星克星
         players: [],
@@ -90,7 +90,7 @@ Page({
         selectedDayRecords: [],
         /** 选中日的农历全称，如「八月十五 · 中秋节」 */
         selectedDayLunar: '',
-        // ===== Pro 月度报表（解锁后展示；免费版仅显示锁定卡）=====
+        // ===== Pro 月度战报（解锁后展示；免费版仅显示锁定卡）=====
         isPro: false,
         monthlyReport: null, // 本月战报
         monthlyTrend: [] // 最近 6 月场次趋势
@@ -137,11 +137,13 @@ Page({
         const advice = selectedPlayer
             ? buildMonthAdvice(records, selectedPlayer.id)
             : null;
-        // ====== Pro 月度报表（本月战报 + 最近 6 月趋势）======
+        // ====== Pro 月度战报（本月战报 + 最近 6 月趋势）======
         // 即使非 Pro 也算好，存在 data 里；Pro 时 WXML 显示完整，否则显示锁定卡
         const proActive = isPro();
         this.setData(Object.assign(Object.assign(Object.assign({ players, selectedPlayerId: (selectedPlayer === null || selectedPlayer === void 0 ? void 0 : selectedPlayer.id) || '', selectedPlayerIndex: selectedIdx, analysis, enoughData: records.length >= MIN_GAMES_FOR_ANALYSIS, totalGames,
-            relevantGames, luckyList: decorate(analysis === null || analysis === void 0 ? void 0 : analysis.luckyPartners) }, this.evilView(analysis)), { advice, currentYear: year, currentMonth: month, monthText: `${year}年${month}月`, calendarCells: calendar.cells, calendarStats: calendar.stats, isPro: proActive }), this.reportView(records, selectedPlayer)));
+            relevantGames, luckyList: decorate(analysis === null || analysis === void 0 ? void 0 : analysis.luckyPartners) }, this.evilView(analysis)), { advice, currentYear: year, currentMonth: month, monthText: `${year}年${month}月`, calendarCells: calendar.cells, calendarStats: calendar.stats, isPro: proActive, 
+            // Banner 广告：仅免费用户，三个 Tab 各一个（Tab 互斥，同屏密度 = 1）
+            showFortuneAd: adEnabled('fortuneBanner', proActive), showCalendarAd: adEnabled('calendarBanner', proActive), showReportAd: adEnabled('reportBanner', proActive), bannerUnitId: adUnitId('fortuneBanner') }), this.reportView(records, selectedPlayer)));
     },
     /**
      * 月报数据段：按当前月历选中的年月 + 玩家视角重算。
@@ -191,7 +193,7 @@ Page({
         if (!requireLogin(this))
             return;
         runProUpgradeFlow(() => {
-            // 支付成功刷新本页 tier（让月度报表 Tab 从锁定卡切到完整内容）
+            // 支付成功刷新本页 tier（让月度战报 Tab 从锁定卡切到完整内容）
             this.setData({ isPro: isPro() });
             this.loadData();
         });

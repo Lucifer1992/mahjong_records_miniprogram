@@ -116,7 +116,11 @@ Page({
             ruleFilterOptions,
             records: list,
             filteredRecords: list,
-            displayedRecords: list.slice(0, this.data.recordsCollapsedCount),
+            // 按 recordsExpanded 恢复展开/收起（onShow 从分享页等返回会重新 loadData，
+            // 之前无条件重置成折叠态但文案仍是「收起」→ 状态撕裂：显示 1 条却写「收起」）
+            displayedRecords: this.data.recordsExpanded
+                ? list
+                : list.slice(0, this.data.recordsCollapsedCount),
             hasRecords: list.length > 0,
             selectedRuleFilter: 'all',
             selectedFilterIndex,

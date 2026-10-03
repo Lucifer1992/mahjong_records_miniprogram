@@ -98,7 +98,7 @@
       </view>
       <view class="tier-line">
         <text class="tier-dot"></text>
-        <text class="tier-line-text">{{ isPro ? '月度报表随时看' : '月度报表（升级解锁）' }}</text>
+        <text class="tier-line-text">{{ isPro ? '月度战报随时看' : '月度战报（升级解锁）' }}</text>
       </view>
       <view class="tier-line">
         <text class="tier-dot"></text>

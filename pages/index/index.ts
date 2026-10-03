@@ -50,6 +50,8 @@ import {
 import type { Lineup } from '../../utils/storage';
 import { playerAvatarIdx, playerAvatarSrc, builtinAvatarSrc } from '../../utils/avatar';
 import { updateProfile } from '../../utils/api';
+import { isPro } from '../../utils/tier';
+import { adEnabled, adUnitId } from '../../utils/ads';
 import { inferDurationByClock } from '../../utils/duration';
 import { formatDateShort, formatDateTime } from '../../utils/date';
 import { enqueuePush, tryAutoSync } from '../../utils/sync';
@@ -225,6 +227,11 @@ Page({
     this.refreshDailyStats();
     this.refreshMeButton();
     this.refreshRecentPlayers();
+    // Banner 广告：仅免费用户（Pro 免广告）；onShow 重算以响应升级/降级
+    this.setData({
+      showAd: adEnabled('indexBanner', isPro()),
+      adUnitId: adUnitId('indexBanner')
+    });
   },
 
   onUnload() {

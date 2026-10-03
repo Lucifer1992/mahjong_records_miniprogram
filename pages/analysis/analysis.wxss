@@ -1113,3 +1113,8 @@
   color: var(--color-text-tertiary);
   margin-top: 24rpx;
 }
+
+/* ===== Banner 广告（仅免费用户渲染，三个 Tab 各一个）===== */
+.ad-banner {
+  margin: 24rpx 24rpx 40rpx;
+}

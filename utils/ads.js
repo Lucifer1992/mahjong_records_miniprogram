@@ -14,6 +14,15 @@
 export const AD_UNITS = {
     /** 战绩页底部 Banner（原生模板广告 · 16:9 横版卡片 + 20:7 横幅卡片） */
     recordsBanner: 'adunit-370876400edd2ffb',
+    /** 记分页（首页）底部 Banner —— 暂复用 recordsBanner 同一广告位；
+     *  如需分位置统计曝光，在 MP 后台新建 Banner 广告位后替换 id 即可 */
+    indexBanner: 'adunit-370876400edd2ffb',
+    /** 复盘页 · 福星克星 Tab 底部 Banner */
+    fortuneBanner: 'adunit-370876400edd2ffb',
+    /** 复盘页 · 牌局月历 Tab 底部 Banner */
+    calendarBanner: 'adunit-370876400edd2ffb',
+    /** 复盘页 · 月度战报 Tab 底部 Banner */
+    reportBanner: 'adunit-370876400edd2ffb',
     /** 激励视频（用途：免费用户看一次视频，限时 24h 解锁完整克星榜） */
     rewardedVideo: 'adunit-1828cc213e7f1060'
 };

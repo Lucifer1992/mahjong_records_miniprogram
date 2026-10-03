@@ -298,6 +298,9 @@
               auto-height></textarea>
   </view>
 
+  <!-- 广告：仅免费用户（Pro 免广告），记分页内容底部 -->
+  <ad wx:if="{{ showAd }}" unit-id="{{ adUnitId }}" class="ad-banner"></ad>
+
 </view>
 
 <!-- 底部操作栏 -->
