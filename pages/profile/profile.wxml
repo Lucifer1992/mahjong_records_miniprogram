@@ -6,9 +6,11 @@
     <view class="user-hero-bg"></view>
     <view class="user-hero-content" bindtap="onUserHeroTap">
       <view class="user-avatar">
-        <!-- 已登录：点头像拉起换头像面板（内置 20 头像 / 微信头像），catchtap 挡住 hero 整体点击 -->
+        <!-- 已登录：点头像拉起换头像面板（内置 20 头像 / 微信头像）
+             ⚠️ 同节点只能绑一个 tap：bindtap+catchtap 双绑时 catchtap 优先、bindtap 被忽略
+             （2026-10-03 实锤：双绑导致 onAvatarTap 永远不执行，点击无反应无报错） -->
         <button wx:if="{{ isLoggedIn }}" class="avatar-change-btn"
-                bindtap="onAvatarTap" catchtap="noop">
+                catchtap="onAvatarTap">
           <image wx:if="{{ accountAvatar }}" class="avatar-img" src="{{ accountAvatar }}" mode="aspectFill" />
           <text wx:else class="avatar-emoji">🀄</text>
         </button>
