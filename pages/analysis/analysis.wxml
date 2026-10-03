@@ -157,7 +157,7 @@
     </view>
 
     <!-- 广告：仅免费用户（Pro 免广告），福星克星 Tab 底部 -->
-    <ad wx:if="{{ showFortuneAd }}" unit-id="{{ bannerUnitId }}" class="ad-banner"></ad>
+    <ad wx:if="{{ showFortuneAd }}" unit-id="{{ fortuneAdUnitId }}" class="ad-banner"></ad>
   </view>
 
   <!-- ============ 牌局月历 Tab ============ -->
@@ -299,7 +299,7 @@
     </view>
 
     <!-- 广告：仅免费用户（Pro 免广告），牌局月历 Tab 底部 -->
-    <ad wx:if="{{ showCalendarAd }}" unit-id="{{ bannerUnitId }}" class="ad-banner"></ad>
+    <ad wx:if="{{ showCalendarAd }}" unit-id="{{ calendarAdUnitId }}" class="ad-banner"></ad>
   </view>
 
   <!-- ============ 月度战报 Tab（Pro 专属）============ -->
@@ -484,7 +484,7 @@
     </block>
 
     <!-- 广告：仅免费用户（Pro 免广告），月度战报 Tab 底部（免费用户在锁定卡下方） -->
-    <ad wx:if="{{ showReportAd }}" unit-id="{{ bannerUnitId }}" class="ad-banner"></ad>
+    <ad wx:if="{{ showReportAd }}" unit-id="{{ reportAdUnitId }}" class="ad-banner"></ad>
   </view>
 
 </view>

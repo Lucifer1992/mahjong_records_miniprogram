@@ -217,7 +217,9 @@ Page({
       showFortuneAd: adEnabled('fortuneBanner', proActive),
       showCalendarAd: adEnabled('calendarBanner', proActive),
       showReportAd: adEnabled('reportBanner', proActive),
-      bannerUnitId: adUnitId('fortuneBanner'),
+      fortuneAdUnitId: adUnitId('fortuneBanner'),
+      calendarAdUnitId: adUnitId('calendarBanner'),
+      reportAdUnitId: adUnitId('reportBanner'),
       ...this.reportView(records, selectedPlayer)
     });
   },

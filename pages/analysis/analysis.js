@@ -141,7 +141,7 @@ Page({
         this.setData(Object.assign(Object.assign(Object.assign({ players, selectedPlayerId: (selectedPlayer === null || selectedPlayer === void 0 ? void 0 : selectedPlayer.id) || '', selectedPlayerIndex: selectedIdx, analysis, enoughData: records.length >= MIN_GAMES_FOR_ANALYSIS, totalGames,
             relevantGames, luckyList: decorate(analysis === null || analysis === void 0 ? void 0 : analysis.luckyPartners) }, this.evilView(analysis)), { advice, currentYear: year, currentMonth: month, monthText: `${year}年${month}月`, calendarCells: calendar.cells, calendarStats: calendar.stats, isPro: proActive, 
             // Banner 广告：仅免费用户，三个 Tab 各一个（Tab 互斥，同屏密度 = 1）
-            showFortuneAd: adEnabled('fortuneBanner', proActive), showCalendarAd: adEnabled('calendarBanner', proActive), showReportAd: adEnabled('reportBanner', proActive), bannerUnitId: adUnitId('fortuneBanner') }), this.reportView(records, selectedPlayer)));
+            showFortuneAd: adEnabled('fortuneBanner', proActive), showCalendarAd: adEnabled('calendarBanner', proActive), showReportAd: adEnabled('reportBanner', proActive), fortuneAdUnitId: adUnitId('fortuneBanner'), calendarAdUnitId: adUnitId('calendarBanner'), reportAdUnitId: adUnitId('reportBanner') }), this.reportView(records, selectedPlayer)));
     },
     /**
      * 月报数据段：按当前月历选中的年月 + 玩家视角重算。
