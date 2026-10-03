@@ -1213,12 +1213,14 @@ Page({
 
   validateScore() {
     const total = this.data.players.reduce((sum, p) => sum + p.score, 0);
-    const valid = total === 0 && this.data.players.length >= MIN_PLAYERS;
     const hasAnyScore = this.data.players.some(p => p.scoreText && p.scoreText !== '0' && p.scoreText !== '');
     this.setData({
       totalScore: total,
+      // 和为 0 就是平账（包括刚开局的未录入状态——全部 0 分也是平的，
+      // 之前 resetForm 硬编码 scoreValid=false 导致显示「0 ≠ 0」自相矛盾）
       scoreValid: total === 0,
-      saveEnabled: valid,
+      // 空局（还没录任何分数）不允许保存，防误触双保存
+      saveEnabled: total === 0 && this.data.players.length >= MIN_PLAYERS && hasAnyScore,
       hasAnyScore
     });
   },
@@ -1237,6 +1239,8 @@ Page({
         wx.showToast({ title: '总分必须为 0', icon: 'none' });
       } else if (this.data.players.length < MIN_PLAYERS) {
         wx.showToast({ title: `至少 ${MIN_PLAYERS} 人`, icon: 'none' });
+      } else if (!this.data.hasAnyScore) {
+        wx.showToast({ title: '请先录入分数', icon: 'none' });
       }
       return;
     }
@@ -1301,11 +1305,10 @@ Page({
     this.setData({
       players,
       note: '',
-      selectedMood: null,
-      totalScore: 0,
-      scoreValid: false,
-      saveEnabled: false
+      selectedMood: null
     });
+    // 开新一局后按真实状态重算：全 0 分 = 平账 ✓，但 hasAnyScore=false → 保存按钮仍禁用
+    this.validateScore();
   },
 
   onFinish() {
