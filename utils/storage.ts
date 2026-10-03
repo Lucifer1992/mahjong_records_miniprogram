@@ -2,6 +2,7 @@
 
 import type { GameRecord, Player, PlayerScore, Seat, Settings, RuleType } from './types';
 import { PLAYER_COLORS, SEAT_ORDER } from './types';
+import { API_BASE } from './api';
 
 /**
  * 给本局新玩家分配座位：按东→南→西→北 顺序找第一个空位。
@@ -388,6 +389,32 @@ export function renameMe(newName: string): { ok: boolean; message: string } {
   upsertPlayer(me);
   bindMe(me.id);
   return { ok: true, message: name };
+}
+
+/**
+ * 账户头像 → 同步到「我」的牌友档案（本人信息两处保持同一套头像）
+ *
+ * - `local:N`（内置头像标记）→ avatarIdx = N，清掉 avatarUrl
+ * - URL（微信头像上传后的 /avatars/x）→ avatarUrl 存完整地址，avatarIdx 保留作回退
+ *
+ * 在我的页换头像 / 登录完善资料成功后调用；找不到「我」的档案时静默跳过。
+ */
+export function syncMyAvatar(avatar: string): void {
+  if (!avatar) return;
+  const me = getMe();
+  if (!me) return;
+  const mine = getPlayers().find(p => p.id === me.id);
+  if (!mine) return;
+
+  if (avatar.indexOf('local:') === 0) {
+    const idx = parseInt(avatar.slice(6), 10);
+    if (!(idx >= 1 && idx <= 20)) return;
+    mine.avatarIdx = idx;
+    mine.avatarUrl = undefined;
+  } else {
+    mine.avatarUrl = avatar.indexOf('http') === 0 ? avatar : API_BASE + avatar;
+  }
+  upsertPlayer(mine);
 }
 
 // ========== 设置 ==========

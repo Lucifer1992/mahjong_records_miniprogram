@@ -48,21 +48,20 @@ import {
   uuid
 } from '../../utils/storage';
 import type { Lineup } from '../../utils/storage';
+import { playerAvatarIdx, playerAvatarSrc, builtinAvatarSrc } from '../../utils/avatar';
+import { updateProfile } from '../../utils/api';
 import { inferDurationByClock } from '../../utils/duration';
 import { formatDateShort, formatDateTime } from '../../utils/date';
 import { enqueuePush, tryAutoSync } from '../../utils/sync';
 import { calcSelfWinRate, calcDailySession } from '../../utils/stats';
 
-/** 统一取头像索引：优先用 stored avatarIdx，否则用昵称哈希，保证 1-20 */
-function playerAvatarIdx(p: { nickname: string; avatarIdx?: number }): number {
-  if (p.avatarIdx && p.avatarIdx >= 1 && p.avatarIdx <= 20) return p.avatarIdx;
-  const h = p.nickname.charCodeAt(0) + (p.nickname.charCodeAt(1) || 0);
-  return (h % 20) + 1;
-}
-
 interface DraftPlayer extends PlayerScore {
   color: string;
   avatarIdx: number;
+  /** 自定义头像 URL（微信头像）；展示优先于 avatarIdx */
+  avatarUrl?: string;
+  /** 预计算的头像展示地址（WXML 不能调函数） */
+  avatarSrc: string;
   /** 输入框里的原始数字，只存绝对值（正负由 negative 决定） */
   scoreText: string;
   /** 是否负分（输家）。数字键盘打不出负号，所以用按钮切换 */
@@ -87,6 +86,8 @@ interface SeatView {
   negative: boolean;
   isEvil: boolean;
   avatarIdx: number;
+  /** 预计算头像地址（avatarUrl 优先，WXML 直接用） */
+  avatarSrc: string;
 }
 
 /** 弹窗内的 4 行座位视图 */
@@ -306,7 +307,8 @@ Page({
         scoreText: p.scoreText,
         negative: p.negative,
         isEvil: evilIds.has(p.playerId),
-        avatarIdx: p.avatarIdx
+        avatarIdx: p.avatarIdx,
+        avatarSrc: p.avatarSrc || playerAvatarSrc(p)
       };
     }
 
@@ -455,6 +457,7 @@ Page({
     const list = withUsage.map(p => ({
       ...p,
       avatarIdx: playerAvatarIdx(p),
+      avatarSrc: playerAvatarSrc(p),
       inGame: inGameIds.has(p.id),
       checked: inGameIds.has(p.id)
     }));
@@ -653,6 +656,8 @@ Page({
         seat,
         color: p.color,
         avatarIdx: playerAvatarIdx(p),
+        avatarUrl: p.avatarUrl,
+        avatarSrc: playerAvatarSrc(p),
         scoreText: '',
         negative: false
       } as DraftPlayer);
@@ -757,10 +762,15 @@ Page({
       return;
     }
 
-    // 同步本局中的 draft（若该牌友正在牌桌上）
+    // 同步本局中的 draft（若该牌友正在牌桌上）：显式选内置图 → 清自定义 URL
     const players = this.data.players.map(p =>
-      p.playerId === id ? { ...p, avatarIdx: idx } : p
+      p.playerId === id ? { ...p, avatarIdx: idx, avatarUrl: undefined, avatarSrc: builtinAvatarSrc(idx) } : p
     );
+
+    // 反向同步：改的是「我」的头像 → 账户头像一并更新（local:N 标记，不传图）
+    if (getMe()?.id === id) {
+      updateProfile({ avatar: `local:${idx}` }).catch(() => { /* 静默：本地已生效 */ });
+    }
 
     this.setData({
       players,
@@ -808,6 +818,9 @@ Page({
 
     const player = findOrCreatePlayer(name);
     const seat = pickNextSeat(this.data.players);
+    // 用户显式选的优先；否则用档案自带头像（findOrCreatePlayer 已避开现有牌友占用的）
+    const pickedIdx = this.data.selectedAvatarIdx
+      || (player.avatarIdx && player.avatarIdx >= 1 && player.avatarIdx <= 20 ? player.avatarIdx : 0);
     const draft: DraftPlayer = {
       playerId: player.id,
       nickname: player.nickname,
@@ -816,8 +829,9 @@ Page({
       isObserver: false,
       seat,
       color: player.color,
-      // 用户显式选的优先；否则用档案自带头像（findOrCreatePlayer 已避开现有牌友占用的）
-      avatarIdx: this.data.selectedAvatarIdx || player.avatarIdx || playerAvatarIdx(player),
+      avatarIdx: pickedIdx || playerAvatarIdx(player),
+      avatarUrl: pickedIdx ? undefined : player.avatarUrl,
+      avatarSrc: pickedIdx ? builtinAvatarSrc(pickedIdx) : playerAvatarSrc(player),
       scoreText: '',
       negative: false
     };
@@ -855,6 +869,8 @@ Page({
       seat,
       color: me.color,
       avatarIdx: playerAvatarIdx(me),
+      avatarUrl: me.avatarUrl,
+      avatarSrc: playerAvatarSrc(me),
       scoreText: '',
       negative: false
     };

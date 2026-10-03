@@ -6,17 +6,12 @@ import { SUPPORTED_RULES, CUSTOM_RULE_ENTRY, CUSTOM_RULE_NAME_MAX, DURATIONS, MO
 /** 预设卡通头像列表（assets/avatars/avatar-XX.png，1-20）*/
 export const AVATAR_OPTIONS = Array.from({ length: 20 }, (_, i) => `/assets/avatars/avatar-${String(i + 1).padStart(2, '0')}.png`);
 import { addRecord, findOrCreatePlayer, suggestAvatarIdx, updatePlayerAvatar, getPlayers, getRecords, ensureMe, getMe, rememberLastRuleType, getLastOrDefaultRuleType, getSettings, rememberLastDuration, deletePlayer, getRecentLineups, pickNextSeat, pickNextSeatFrom, uuid } from '../../utils/storage';
+import { playerAvatarIdx, playerAvatarSrc, builtinAvatarSrc } from '../../utils/avatar';
+import { updateProfile } from '../../utils/api';
 import { inferDurationByClock } from '../../utils/duration';
 import { formatDateShort, formatDateTime } from '../../utils/date';
 import { enqueuePush, tryAutoSync } from '../../utils/sync';
 import { calcSelfWinRate, calcDailySession } from '../../utils/stats';
-/** 统一取头像索引：优先用 stored avatarIdx，否则用昵称哈希，保证 1-20 */
-function playerAvatarIdx(p) {
-    if (p.avatarIdx && p.avatarIdx >= 1 && p.avatarIdx <= 20)
-        return p.avatarIdx;
-    const h = p.nickname.charCodeAt(0) + (p.nickname.charCodeAt(1) || 0);
-    return (h % 20) + 1;
-}
 Page({
     data: {
         // ===== 玩法选择（保持原样）=====
@@ -209,7 +204,8 @@ Page({
                 scoreText: p.scoreText,
                 negative: p.negative,
                 isEvil: evilIds.has(p.playerId),
-                avatarIdx: p.avatarIdx
+                avatarIdx: p.avatarIdx,
+                avatarSrc: p.avatarSrc || playerAvatarSrc(p)
             };
         }
         this.setData({ seats });
@@ -347,7 +343,7 @@ Page({
             .sort((a, b) => b.usage - a.usage || b.createdAt - a.createdAt)
             .slice(0, 30);
         const inGameIds = new Set(this.data.players.map(p => p.playerId));
-        const list = withUsage.map(p => (Object.assign(Object.assign({}, p), { avatarIdx: playerAvatarIdx(p), inGame: inGameIds.has(p.id), checked: inGameIds.has(p.id) })));
+        const list = withUsage.map(p => (Object.assign(Object.assign({}, p), { avatarIdx: playerAvatarIdx(p), avatarSrc: playerAvatarSrc(p), inGame: inGameIds.has(p.id), checked: inGameIds.has(p.id) })));
         this.setData({
             recentPlayers: list,
             recentLineups: getRecentLineups(records),
@@ -536,6 +532,8 @@ Page({
                 seat,
                 color: p.color,
                 avatarIdx: playerAvatarIdx(p),
+                avatarUrl: p.avatarUrl,
+                avatarSrc: playerAvatarSrc(p),
                 scoreText: '',
                 negative: false
             });
@@ -624,6 +622,7 @@ Page({
     },
     /** 头像编辑弹层：点选即保存生效 */
     onAvatarEditorPick(e) {
+        var _a;
         const idx = Number(e.currentTarget.dataset.idx);
         const id = this.data.avatarEditorPlayerId;
         if (!id)
@@ -633,8 +632,12 @@ Page({
             wx.showToast({ title: '牌友不存在', icon: 'none' });
             return;
         }
-        // 同步本局中的 draft（若该牌友正在牌桌上）
-        const players = this.data.players.map(p => p.playerId === id ? Object.assign(Object.assign({}, p), { avatarIdx: idx }) : p);
+        // 同步本局中的 draft（若该牌友正在牌桌上）：显式选内置图 → 清自定义 URL
+        const players = this.data.players.map(p => p.playerId === id ? Object.assign(Object.assign({}, p), { avatarIdx: idx, avatarUrl: undefined, avatarSrc: builtinAvatarSrc(idx) }) : p);
+        // 反向同步：改的是「我」的头像 → 账户头像一并更新（local:N 标记，不传图）
+        if (((_a = getMe()) === null || _a === void 0 ? void 0 : _a.id) === id) {
+            updateProfile({ avatar: `local:${idx}` }).catch(() => { });
+        }
         this.setData({
             players,
             avatarEditorIdx: idx,
@@ -677,6 +680,9 @@ Page({
         }
         const player = findOrCreatePlayer(name);
         const seat = pickNextSeat(this.data.players);
+        // 用户显式选的优先；否则用档案自带头像（findOrCreatePlayer 已避开现有牌友占用的）
+        const pickedIdx = this.data.selectedAvatarIdx
+            || (player.avatarIdx && player.avatarIdx >= 1 && player.avatarIdx <= 20 ? player.avatarIdx : 0);
         const draft = {
             playerId: player.id,
             nickname: player.nickname,
@@ -685,8 +691,9 @@ Page({
             isObserver: false,
             seat,
             color: player.color,
-            // 用户显式选的优先；否则用档案自带头像（findOrCreatePlayer 已避开现有牌友占用的）
-            avatarIdx: this.data.selectedAvatarIdx || player.avatarIdx || playerAvatarIdx(player),
+            avatarIdx: pickedIdx || playerAvatarIdx(player),
+            avatarUrl: pickedIdx ? undefined : player.avatarUrl,
+            avatarSrc: pickedIdx ? builtinAvatarSrc(pickedIdx) : playerAvatarSrc(player),
             scoreText: '',
             negative: false
         };
@@ -721,6 +728,8 @@ Page({
             seat,
             color: me.color,
             avatarIdx: playerAvatarIdx(me),
+            avatarUrl: me.avatarUrl,
+            avatarSrc: playerAvatarSrc(me),
             scoreText: '',
             negative: false
         };

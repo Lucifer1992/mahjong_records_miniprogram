@@ -136,7 +136,7 @@
               bindtap="onTapSeat"
               bindlongpress="onLongPressSeat"
               catchtouchend="onTapSeat">
-          <image class="seat-avatar-img" src="/assets/avatars/avatar-{{ seats.north.avatarIdx < 10 ? '0' : '' }}{{ seats.north.avatarIdx }}.png" mode="aspectFill" />
+          <image class="seat-avatar-img" src="{{ seats.north.avatarSrc }}" mode="aspectFill" />
         </view>
         <view wx:if="{{ seats.north.score > 0 || seats.north.score < 0 }}" class="seat-score {{ seats.north.score < 0 ? 'is-neg' : '' }}">
           <text wx:if="{{ seats.north.score > 0 }}">+{{ seats.north.score }}</text>
@@ -156,7 +156,7 @@
               bindtap="onTapSeat"
               bindlongpress="onLongPressSeat"
               catchtouchend="onTapSeat">
-          <image class="seat-avatar-img" src="/assets/avatars/avatar-{{ seats.east.avatarIdx < 10 ? '0' : '' }}{{ seats.east.avatarIdx }}.png" mode="aspectFill" />
+          <image class="seat-avatar-img" src="{{ seats.east.avatarSrc }}" mode="aspectFill" />
         </view>
         <view class="seat-pos-label pos-east">东</view>
         <view wx:if="{{ seats.east.score > 0 || seats.east.score < 0 }}" class="seat-score {{ seats.east.score < 0 ? 'is-neg' : '' }}">
@@ -177,7 +177,7 @@
               bindtap="onTapSeat"
               bindlongpress="onLongPressSeat"
               catchtouchend="onTapSeat">
-          <image class="seat-avatar-img" src="/assets/avatars/avatar-{{ seats.south.avatarIdx < 10 ? '0' : '' }}{{ seats.south.avatarIdx }}.png" mode="aspectFill" />
+          <image class="seat-avatar-img" src="{{ seats.south.avatarSrc }}" mode="aspectFill" />
         </view>
         <view class="seat-pos-label pos-south">南</view>
         <view wx:if="{{ seats.south.score > 0 || seats.south.score < 0 }}" class="seat-score {{ seats.south.score < 0 ? 'is-neg' : '' }}">
@@ -199,7 +199,7 @@
               bindtap="onTapSeat"
               bindlongpress="onLongPressSeat"
               catchtouchend="onTapSeat">
-          <image class="seat-avatar-img" src="/assets/avatars/avatar-{{ seats.west.avatarIdx < 10 ? '0' : '' }}{{ seats.west.avatarIdx }}.png" mode="aspectFill" />
+          <image class="seat-avatar-img" src="{{ seats.west.avatarSrc }}" mode="aspectFill" />
         </view>
         <view wx:if="{{ seats.west.score > 0 || seats.west.score < 0 }}" class="seat-score {{ seats.west.score < 0 ? 'is-neg' : '' }}">
           <text wx:if="{{ seats.west.score > 0 }}">+{{ seats.west.score }}</text>
@@ -331,7 +331,7 @@
             catchtap="onModalSelectSeat">
         <view class="modal-row-pos">{{ item.seatLabel }}</view>
         <view class="modal-row-avatar {{ item.isEvil ? 'is-evil' : '' }}">
-          <image class="modal-avatar-img" src="/assets/avatars/avatar-{{ item.avatarIdx < 10 ? '0' : '' }}{{ item.avatarIdx }}.png" mode="aspectFill" />
+          <image class="modal-avatar-img" src="{{ item.avatarSrc }}" mode="aspectFill" />
         </view>
         <view class="modal-row-info">
           <view class="modal-row-name">{{ item.nickname }}</view>
@@ -414,7 +414,7 @@
             bindlongpress="onLongPressRecentPlayer"
             hover-class="recent-row-hover">
         <view class="recent-avatar-wrap">
-          <image class="recent-avatar-img" src="/assets/avatars/avatar-{{ item.avatarIdx >= 1 && item.avatarIdx <= 20 ? (item.avatarIdx < 10 ? '0' : '') + item.avatarIdx : '01' }}.png"
+          <image class="recent-avatar-img" src="{{ item.avatarSrc }}"
                  mode="aspectFill" />
         </view>
         <view class="recent-info">

@@ -3,7 +3,7 @@
 
 import type { GameRecord, Player, Settings } from '../../utils/types';
 import { promptLoginIfNeeded, requireLogin } from '../../utils/auth';
-import { getPlayers, getRecords, getSettings, updateSettings, exportAll, importAll, clearAll, getMe, renameMe } from '../../utils/storage';
+import { getPlayers, getRecords, getSettings, updateSettings, exportAll, importAll, clearAll, getMe, renameMe, syncMyAvatar } from '../../utils/storage';
 import { getSyncStatus, getPendingCount, syncFull, pullAndMerge, refreshTier, type SyncStatus } from '../../utils/sync';
 import { calcSelfWinRate } from '../../utils/stats';
 import { getTier, isPro, setTier, getFreeWindowDates, type Tier } from '../../utils/tier';
@@ -653,6 +653,8 @@ Page({
 
     try {
       await updateProfile({ avatar: `local:${idx}` });
+      // 本人信息一致：同步到「我」的牌友档案（历史牌友列表/牌桌同头像）
+      syncMyAvatar(`local:${idx}`);
       wx.showToast({ title: '头像已更新', icon: 'success' });
       this.setData({
         accountAvatar: BUILTIN_AVATAR_LIST[idx - 1],
@@ -673,6 +675,8 @@ Page({
     try {
       const { url } = await uploadAvatar(path);
       await updateProfile({ avatar: url });
+      // 本人信息一致：同步到「我」的牌友档案（微信头像 URL 优先展示）
+      syncMyAvatar(url);
       wx.hideLoading();
       wx.showToast({ title: '头像已更新', icon: 'success' });
       this.setData({ avatarPickerVisible: false });

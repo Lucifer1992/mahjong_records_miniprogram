@@ -3,7 +3,7 @@
 import { wxLogin, setToken, uploadAvatar, updateProfile } from '../../utils/api';
 import { setTier } from '../../utils/tier';
 import { bootSync } from '../../utils/sync';
-import { getRecords, ensureMe, renameMe } from '../../utils/storage';
+import { getRecords, ensureMe, renameMe, syncMyAvatar } from '../../utils/storage';
 
 Component({
   data: {
@@ -88,6 +88,8 @@ Component({
         if (this.data.avatarPath) {
           const { url: avatarUrl } = await uploadAvatar(this.data.avatarPath);
           await updateProfile({ nickname: this.data.nickname || undefined, avatar: avatarUrl });
+          // 头像同步到「我」的牌友档案（本人信息两处一套头像）
+          syncMyAvatar(avatarUrl);
         } else if (this.data.nickname) {
           await updateProfile({ nickname: this.data.nickname });
         }

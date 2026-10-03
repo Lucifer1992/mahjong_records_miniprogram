@@ -87,6 +87,8 @@ export interface Player {
   color: string;
   /** 卡通头像索引 1-20，undefined 时按 color 哈希回退 */
   avatarIdx?: number;
+  /** 自定义头像 URL（微信头像上传后的地址）；展示时优先于 avatarIdx（本人信息与账户头像保持一致） */
+  avatarUrl?: string;
   createdAt: number;
   totalGames: number;
   totalScore: number;
