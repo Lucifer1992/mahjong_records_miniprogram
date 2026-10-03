@@ -187,6 +187,9 @@ Page({
                 accountName: me.nickname || '',
                 accountAvatar: resolveAvatarSrc(me.avatar || '')
             });
+            // 自愈：把云端头像再同步进「我」的牌友档案 —— 兜住历史漏同步
+            // （同步功能上线前改过头像 / 换设备恢复等情况，档案里还是旧头像）
+            syncMyAvatar(me.avatar || '');
         }
         catch (_a) {
             // 静默：显示现有值

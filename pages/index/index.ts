@@ -478,10 +478,12 @@ Page({
       .slice(0, 30);
 
     const inGameIds = new Set(this.data.players.map(p => p.playerId));
+    const meId = getMe()?.id || '';
     const list = withUsage.map(p => ({
       ...p,
       avatarIdx: playerAvatarIdx(p),
       avatarSrc: playerAvatarSrc(p),
+      isMe: !!meId && p.id === meId,
       inGame: inGameIds.has(p.id),
       checked: inGameIds.has(p.id)
     }));

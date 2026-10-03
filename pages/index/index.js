@@ -350,6 +350,7 @@ Page({
     },
     // ========== 玩家管理（改为按座位分配） ==========
     refreshRecentPlayers() {
+        var _a;
         const records = getRecords();
         const allPlayers = getPlayers();
         const usage = new Map();
@@ -367,7 +368,8 @@ Page({
             .sort((a, b) => b.usage - a.usage || b.createdAt - a.createdAt)
             .slice(0, 30);
         const inGameIds = new Set(this.data.players.map(p => p.playerId));
-        const list = withUsage.map(p => (Object.assign(Object.assign({}, p), { avatarIdx: playerAvatarIdx(p), avatarSrc: playerAvatarSrc(p), inGame: inGameIds.has(p.id), checked: inGameIds.has(p.id) })));
+        const meId = ((_a = getMe()) === null || _a === void 0 ? void 0 : _a.id) || '';
+        const list = withUsage.map(p => (Object.assign(Object.assign({}, p), { avatarIdx: playerAvatarIdx(p), avatarSrc: playerAvatarSrc(p), isMe: !!meId && p.id === meId, inGame: inGameIds.has(p.id), checked: inGameIds.has(p.id) })));
         this.setData({
             recentPlayers: list,
             recentLineups: getRecentLineups(records),
