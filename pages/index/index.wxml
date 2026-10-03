@@ -377,21 +377,9 @@
   </view>
 </view>
 
-<!-- 头像快捷分数小菜单（长按头像 + 按钮触发；点选即生效） -->
-<view wx:if="{{ quickScoreMenuSeat }}" class="quick-menu-mask" catchtap="onCloseQuickScoreMenu">
-  <view class="quick-menu" catchtap="">
-    <view class="quick-menu-title">快速加减（带符号）</view>
-    <view class="quick-menu-grid">
-      <view class="quick-menu-btn is-neg" data-value="-10" catchtap="onQuickScoreMenuPick">−10</view>
-      <view class="quick-menu-btn is-neg" data-value="-5" catchtap="onQuickScoreMenuPick">−5</view>
-      <view class="quick-menu-btn" data-value="5" catchtap="onQuickScoreMenuPick">+5</view>
-      <view class="quick-menu-btn" data-value="10" catchtap="onQuickScoreMenuPick">+10</view>
-      <view class="quick-menu-btn" data-value="20" catchtap="onQuickScoreMenuPick">+20</view>
-      <view class="quick-menu-btn is-neg" data-value="-20" catchtap="onQuickScoreMenuPick">−20</view>
-    </view>
-    <view class="quick-menu-cancel" catchtap="onCloseQuickScoreMenu">取消</view>
-  </view>
-</view>
+<!-- （原「头像快捷分数小菜单」死代码已删除：quickScoreMenuSeat 不在 data、
+     onQuickScoreMenuPick/onCloseQuickScoreMenu 两个 handler 从未实现，
+     wx:if 永假从未渲染；快捷分数统一走计分弹窗的 onModalQuickScore） -->
 
 <!-- 历史牌友抽屉（多选：勾多位 → 底部「加入本局」一次性加入） -->
 <view class="recent-mask {{ showRecentPlayers ? 'is-visible' : '' }}"
